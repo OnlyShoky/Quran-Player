@@ -1,7 +1,7 @@
 /// One item in the user's playlist.
 class PlaylistItem {
   final int surahId;
-  final String reciterId;
+  final int reciterId;
   final bool isDownloaded;
 
   const PlaylistItem({
@@ -12,7 +12,7 @@ class PlaylistItem {
 
   PlaylistItem copyWith({
     int? surahId,
-    String? reciterId,
+    int? reciterId,
     bool? isDownloaded,
   }) {
     return PlaylistItem(

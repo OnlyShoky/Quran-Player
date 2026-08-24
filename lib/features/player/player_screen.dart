@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/data/mock_data.dart';
+import '../../core/models/reciter.dart';
 import '../../shared/providers/playlist_provider.dart';
 import '../../shared/providers/player_provider.dart';
 
@@ -43,9 +43,11 @@ class PlayerScreen extends StatelessWidget {
     final surah = playlist.surahById(currentItem.surahId);
     if (surah == null) return const Scaffold();
 
-    final reciter = MockData.reciters.firstWhere(
+    final reciter = playlist.reciters.firstWhere(
       (r) => r.id == currentItem.reciterId,
-      orElse: () => MockData.reciters.first,
+      orElse: () => playlist.reciters.isNotEmpty 
+          ? playlist.reciters.first 
+          : const Reciter(id: -1, name: 'Unknown', style: '', serverUrl: ''),
     );
 
     return Scaffold(

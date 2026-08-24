@@ -178,7 +178,20 @@ class _ReciterSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final playlist = context.watch<PlaylistProvider>();
-    final reciters = MockData.reciters;
+    final reciters = playlist.reciters;
+
+    if (playlist.isLoadingReciters) {
+      return const SizedBox(
+        height: 52,
+        child: Center(
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
 
     return SizedBox(
       height: 52,

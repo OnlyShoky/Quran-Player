@@ -1,16 +1,8 @@
-import '../models/reciter.dart';
 import '../models/surah.dart';
 
 /// Static mock data for Phase 1.
 /// Will be replaced by live API data in Phase 2.
 abstract class MockData {
-  static const List<Reciter> reciters = [
-    Reciter(id: 'mishary', name: 'Mishary Rashid Alafasy', style: 'Murattal'),
-    Reciter(id: 'sudais', name: 'Abdul Rahman Al-Sudais', style: 'Murattal'),
-    Reciter(id: 'husary', name: 'Mahmoud Khalil Al-Husary', style: 'Murattal'),
-    Reciter(id: 'minshawi', name: 'Mohamed Siddiq Al-Minshawi', style: 'Mujawwad'),
-    Reciter(id: 'ghamdi', name: 'Saad Al-Ghamdi', style: 'Murattal'),
-  ];
 
   static const List<Surah> surahs = [
     Surah(id: 1, nameAr: 'الفاتحة', nameEn: 'Al-Fatihah', nameEnTranslation: 'The Opening', ayahCount: 7, revelationType: RevelationType.meccan),
