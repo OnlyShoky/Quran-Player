@@ -20,6 +20,15 @@ class PlaylistProvider extends ChangeNotifier {
   int? get selectedReciterId => _selectedReciterId;
   List<PlaylistItem> get items => List.unmodifiable(_items);
 
+  Reciter? get selectedReciter {
+    if (_selectedReciterId == null || _reciters.isEmpty) return null;
+    try {
+      return _reciters.firstWhere((r) => r.id == _selectedReciterId);
+    } catch (_) {
+      return _reciters.first;
+    }
+  }
+
   PlaylistProvider() {
     _fetchReciters();
   }
@@ -46,20 +55,41 @@ class PlaylistProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addSurah(int surahId) {
-    if (_selectedReciterId == null) return;
-    
-    if (!containsSurah(surahId)) {
-      _items.add(PlaylistItem(
-        surahId: surahId,
-        reciterId: _selectedReciterId!,
-      ));
-      notifyListeners();
+  /// Ensures a surah is in the playlist. Returns the index of the surah in the playlist.
+  int ensureSurahInPlaylist(int surahId) {
+    if (_selectedReciterId == null) {
+      if (_reciters.isNotEmpty) {
+        _selectedReciterId = _reciters.first.id;
+      } else {
+        return -1;
+      }
     }
+
+    int existingIndex = indexOfSurah(surahId);
+    if (existingIndex != -1) {
+      return existingIndex;
+    }
+
+    _items.add(PlaylistItem(
+      surahId: surahId,
+      reciterId: _selectedReciterId!,
+    ));
+    notifyListeners();
+    return _items.length - 1;
+  }
+
+  void addSurah(int surahId) {
+    ensureSurahInPlaylist(surahId);
   }
 
   void addAllSurahs() {
-    if (_selectedReciterId == null) return;
+    if (_selectedReciterId == null) {
+      if (_reciters.isNotEmpty) {
+        _selectedReciterId = _reciters.first.id;
+      } else {
+        return;
+      }
+    }
 
     for (final surah in MockData.surahs) {
       if (!containsSurah(surah.id)) {

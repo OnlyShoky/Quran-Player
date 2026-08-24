@@ -1,15 +1,28 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:just_audio/just_audio.dart';
+import '../../core/models/surah.dart';
+import '../../core/models/reciter.dart';
 
-enum PlaybackState { stopped, playing, paused }
+enum PlaybackState { stopped, playing, paused, buffering }
 
-/// Mock player state for Phase 1.
-/// Phase 4 will replace this with real audio engine integration.
 class PlayerProvider extends ChangeNotifier {
+  final AudioPlayer _audioPlayer = AudioPlayer();
+
   PlaybackState _state = PlaybackState.stopped;
-  int _currentIndex = 0; // index into the playlist
-  double _progress = 0.0; // 0.0–1.0
+  int _currentIndex = 0;
+  double _progress = 0.0;
   Duration _position = Duration.zero;
-  final Duration _duration = const Duration(minutes: 8, seconds: 30); // mock
+  Duration _duration = Duration.zero;
+  
+  Surah? _currentSurah;
+  Reciter? _currentReciter;
+  String? _currentAudioUrl;
+  String? _errorMessage;
+
+  StreamSubscription? _playerStateSub;
+  StreamSubscription? _positionSub;
+  StreamSubscription? _durationSub;
 
   PlaybackState get state => _state;
   int get currentIndex => _currentIndex;
@@ -17,63 +30,151 @@ class PlayerProvider extends ChangeNotifier {
   Duration get position => _position;
   Duration get duration => _duration;
   bool get isPlaying => _state == PlaybackState.playing;
+  bool get isBuffering => _state == PlaybackState.buffering;
+  Surah? get currentSurah => _currentSurah;
+  Reciter? get currentReciter => _currentReciter;
+  String? get errorMessage => _errorMessage;
+
+  PlayerProvider() {
+    _initAudioListeners();
+  }
+
+  void _initAudioListeners() {
+    _playerStateSub = _audioPlayer.playerStateStream.listen((playerState) {
+      final playing = playerState.playing;
+      final processingState = playerState.processingState;
+
+      if (processingState == ProcessingState.loading ||
+          processingState == ProcessingState.buffering) {
+        _state = PlaybackState.buffering;
+      } else if (!playing) {
+        _state = PlaybackState.paused;
+      } else if (processingState != ProcessingState.completed) {
+        _state = PlaybackState.playing;
+      } else if (processingState == ProcessingState.completed) {
+        _state = PlaybackState.stopped;
+        _position = Duration.zero;
+        _progress = 0.0;
+        // Auto play next surah if available (handled via callback or external call)
+        _onTrackCompleted();
+      }
+      notifyListeners();
+    });
+
+    _positionSub = _audioPlayer.positionStream.listen((pos) {
+      _position = pos;
+      if (_duration.inMilliseconds > 0) {
+        _progress = (_position.inMilliseconds / _duration.inMilliseconds).clamp(0.0, 1.0);
+      }
+      notifyListeners();
+    });
+
+    _durationSub = _audioPlayer.durationStream.listen((dur) {
+      if (dur != null) {
+        _duration = dur;
+        if (_duration.inMilliseconds > 0) {
+          _progress = (_position.inMilliseconds / _duration.inMilliseconds).clamp(0.0, 1.0);
+        }
+        notifyListeners();
+      }
+    });
+  }
+
+  Function(int completedIndex)? onTrackCompletedCallback;
+
+  void _onTrackCompleted() {
+    if (onTrackCompletedCallback != null) {
+      onTrackCompletedCallback!(_currentIndex);
+    }
+  }
+
+  /// Construct audio URL: serverUrl + 3-digit surah id + .mp3
+  String getAudioUrl(Surah surah, Reciter reciter) {
+    var server = reciter.serverUrl;
+    if (!server.endsWith('/')) {
+      server = '$server/';
+    }
+    final surahNum = surah.id.toString().padLeft(3, '0');
+    return '$server$surahNum.mp3';
+  }
+
+  Future<void> loadAndPlay({
+    required Surah surah,
+    required Reciter reciter,
+    required int index,
+  }) async {
+    _currentIndex = index;
+    _currentSurah = surah;
+    _currentReciter = reciter;
+    _errorMessage = null;
+
+    final url = getAudioUrl(surah, reciter);
+    _currentAudioUrl = url;
+
+    try {
+      _state = PlaybackState.buffering;
+      notifyListeners();
+
+      await _audioPlayer.setUrl(url);
+      await _audioPlayer.play();
+    } catch (e) {
+      _errorMessage = 'Failed to load audio: $e';
+      _state = PlaybackState.stopped;
+      notifyListeners();
+    }
+  }
 
   void play() {
-    _state = PlaybackState.playing;
-    notifyListeners();
+    if (_currentAudioUrl != null) {
+      _audioPlayer.play();
+    }
   }
 
   void pause() {
-    _state = PlaybackState.paused;
-    notifyListeners();
+    _audioPlayer.pause();
   }
 
   void togglePlayPause() {
-    if (_state == PlaybackState.playing) {
+    if (isPlaying) {
       pause();
     } else {
       play();
     }
   }
 
-  void skipToIndex(int index, int playlistLength) {
-    if (index < 0 || index >= playlistLength) return;
-    _currentIndex = index;
-    _progress = 0.0;
-    _position = Duration.zero;
-    notifyListeners();
+  void seekTo(double progressValue) {
+    if (_duration.inMilliseconds > 0) {
+      final targetMs = (_duration.inMilliseconds * progressValue.clamp(0.0, 1.0)).round();
+      _audioPlayer.seek(Duration(milliseconds: targetMs));
+    }
   }
 
-  void skipNext(int playlistLength) {
+  void skipNext(int playlistLength, {Function(int nextIndex)? onSkip}) {
     if (_currentIndex < playlistLength - 1) {
-      skipToIndex(_currentIndex + 1, playlistLength);
+      final nextIdx = _currentIndex + 1;
+      if (onSkip != null) {
+        onSkip(nextIdx);
+      }
     }
   }
 
-  void skipPrevious(int playlistLength) {
+  void skipPrevious(int playlistLength, {Function(int prevIndex)? onSkip}) {
     if (_position.inSeconds > 5) {
-      // restart current track
-      _progress = 0.0;
-      _position = Duration.zero;
-      notifyListeners();
+      _audioPlayer.seek(Duration.zero);
     } else if (_currentIndex > 0) {
-      skipToIndex(_currentIndex - 1, playlistLength);
+      final prevIdx = _currentIndex - 1;
+      if (onSkip != null) {
+        onSkip(prevIdx);
+      }
     }
   }
 
-  void seekTo(double value) {
-    _progress = value.clamp(0.0, 1.0);
-    _position = Duration(
-      milliseconds: (_duration.inMilliseconds * _progress).round(),
-    );
-    notifyListeners();
-  }
-
-  void reset() {
-    _state = PlaybackState.stopped;
-    _currentIndex = 0;
-    _progress = 0.0;
-    _position = Duration.zero;
-    notifyListeners();
+  @override
+  void dispose() {
+    _playerStateSub?.cancel();
+    _positionSub?.cancel();
+    _durationSub?.cancel();
+    _audioPlayer.dispose();
+    super.dispose();
   }
 }

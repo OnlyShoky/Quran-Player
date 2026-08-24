@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/models/surah.dart';
 import '../../core/constants/app_colors.dart';
 import '../providers/playlist_provider.dart';
+import '../providers/player_provider.dart';
 
 /// A single row in the surah list.
 class SurahTile extends StatelessWidget {
@@ -11,12 +13,34 @@ class SurahTile extends StatelessWidget {
 
   const SurahTile({super.key, required this.surah});
 
+  void _playSurah(BuildContext context) {
+    final playlist = context.read<PlaylistProvider>();
+    final player = context.read<PlayerProvider>();
+
+    final reciter = playlist.selectedReciter;
+    if (reciter == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a reciter first')),
+      );
+      return;
+    }
+
+    final index = playlist.ensureSurahInPlaylist(surah.id);
+    if (index != -1) {
+      player.loadAndPlay(surah: surah, reciter: reciter, index: index);
+      context.go('/player');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final playlist = context.watch<PlaylistProvider>();
+    final player = context.watch<PlayerProvider>();
+
     final inPlaylist = playlist.containsSurah(surah.id);
+    final isCurrentlyPlaying = player.currentSurah?.id == surah.id && player.isPlaying;
 
     final isMeccan = surah.revelationType == RevelationType.meccan;
     final tagBg = isMeccan
@@ -27,28 +51,36 @@ class SurahTile extends StatelessWidget {
         : (isDark ? const Color(0xFFC4976A) : const Color(0xFF6B4A1E));
 
     return InkWell(
-      onTap: () {}, // reserved for navigation in later phases
+      onTap: () => _playSurah(context),
       borderRadius: BorderRadius.circular(12),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(
           children: [
-            // --- Number badge ---
+            // --- Number badge / playing indicator ---
             Container(
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: isDark ? AppColors.badgeDark : AppColors.badgeLight,
+                color: isCurrentlyPlaying
+                    ? theme.colorScheme.primaryContainer
+                    : (isDark ? AppColors.badgeDark : AppColors.badgeLight),
                 borderRadius: BorderRadius.circular(10),
               ),
               alignment: Alignment.center,
-              child: Text(
-                '${surah.id}',
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              child: isCurrentlyPlaying
+                  ? Icon(
+                      Icons.graphic_eq_rounded,
+                      color: theme.colorScheme.primary,
+                      size: 20,
+                    )
+                  : Text(
+                      '${surah.id}',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
             ),
             const SizedBox(width: 14),
 
@@ -61,7 +93,10 @@ class SurahTile extends StatelessWidget {
                     children: [
                       Text(
                         surah.nameEn,
-                        style: theme.textTheme.titleSmall,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: isCurrentlyPlaying ? theme.colorScheme.primary : null,
+                          fontWeight: isCurrentlyPlaying ? FontWeight.w700 : null,
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Container(

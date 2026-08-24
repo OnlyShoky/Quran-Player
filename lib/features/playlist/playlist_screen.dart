@@ -3,9 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/models/reciter.dart';
 import '../../shared/providers/playlist_provider.dart';
 import '../../shared/providers/player_provider.dart';
+import '../../shared/widgets/reciter_selector_sheet.dart';
 
 class PlaylistScreen extends StatelessWidget {
   const PlaylistScreen({super.key});
@@ -17,12 +17,7 @@ class PlaylistScreen extends StatelessWidget {
     final playlist = context.watch<PlaylistProvider>();
     final player = context.watch<PlayerProvider>();
 
-    final reciter = playlist.reciters.firstWhere(
-      (r) => r.id == playlist.selectedReciterId,
-      orElse: () => playlist.reciters.isNotEmpty 
-          ? playlist.reciters.first 
-          : const Reciter(id: -1, name: 'Unknown', style: '', serverUrl: ''),
-    );
+    final reciter = playlist.selectedReciter;
 
     return Scaffold(
       body: CustomScrollView(
@@ -34,10 +29,25 @@ class PlaylistScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('My Playlist', style: theme.textTheme.titleLarge),
-                Text(
-                  reciter.name,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.primary,
+                InkWell(
+                  onTap: () => showReciterSelectorModal(context),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        reciter?.name ?? 'Select Reciter',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.arrow_drop_down_rounded,
+                        size: 18,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -91,7 +101,9 @@ class PlaylistScreen extends StatelessWidget {
                     background: Container(
                       alignment: Alignment.centerRight,
                       padding: const EdgeInsets.only(right: 20),
-                      color: isDark ? AppColors.errorDark.withValues(alpha: 0.15) : AppColors.errorLight.withValues(alpha: 0.12),
+                      color: isDark
+                          ? AppColors.errorDark.withValues(alpha: 0.15)
+                          : AppColors.errorLight.withValues(alpha: 0.12),
                       child: Icon(
                         Icons.delete_outline_rounded,
                         color: isDark ? AppColors.errorDark : AppColors.errorLight,
@@ -123,9 +135,14 @@ class PlaylistScreen extends StatelessWidget {
                           surahId: surah.id,
                           isPlaying: isCurrentlyPlaying,
                           onTap: () {
-                            player.skipToIndex(index, playlist.items.length);
-                            player.play();
-                            context.go('/player');
+                            if (reciter != null) {
+                              player.loadAndPlay(
+                                surah: surah,
+                                reciter: reciter,
+                                index: index,
+                              );
+                              context.go('/player');
+                            }
                           },
                         ),
                         Divider(
@@ -153,11 +170,29 @@ class PlaylistScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                 child: FilledButton.icon(
                   onPressed: () {
-                    if (!player.isPlaying) player.play();
-                    context.go('/player');
+                    if (reciter != null) {
+                      final targetIndex = player.currentIndex < playlist.items.length
+                          ? player.currentIndex
+                          : 0;
+                      final targetItem = playlist.items[targetIndex];
+                      final surah = playlist.surahById(targetItem.surahId);
+
+                      if (surah != null) {
+                        if (!player.isPlaying) {
+                          player.loadAndPlay(
+                            surah: surah,
+                            reciter: reciter,
+                            index: targetIndex,
+                          );
+                        }
+                        context.go('/player');
+                      }
+                    }
                   },
-                  icon: const Icon(Icons.play_arrow_rounded),
-                  label: const Text('Play'),
+                  icon: Icon(player.isPlaying
+                      ? Icons.pause_rounded
+                      : Icons.play_arrow_rounded),
+                  label: Text(player.isPlaying ? 'Pause' : 'Play Playlist'),
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(52),
                     shape: RoundedRectangleBorder(

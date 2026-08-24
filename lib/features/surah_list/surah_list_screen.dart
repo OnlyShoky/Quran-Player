@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/data/mock_data.dart';
-import '../../core/models/reciter.dart';
 import '../../core/constants/app_colors.dart';
 import '../../shared/providers/playlist_provider.dart';
 import '../../shared/widgets/surah_tile.dart';
+import '../../shared/widgets/reciter_selector_sheet.dart';
 
 class SurahListScreen extends StatefulWidget {
   const SurahListScreen({super.key});
@@ -61,18 +61,11 @@ class _SurahListScreenState extends State<SurahListScreen> {
                 ),
               ],
             ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.search_rounded),
-                onPressed: () {},
-                tooltip: 'Search',
-              ),
-            ],
           ),
 
-          // --- Reciter selector ---
+          // --- Reciter selector card ---
           SliverToBoxAdapter(
-            child: _ReciterSelector(),
+            child: _ReciterSelectorHeader(),
           ),
 
           // --- Search bar ---
@@ -174,80 +167,123 @@ class _SurahListScreenState extends State<SurahListScreen> {
   }
 }
 
-class _ReciterSelector extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final playlist = context.watch<PlaylistProvider>();
-    final reciters = playlist.reciters;
-
-    if (playlist.isLoadingReciters) {
-      return const SizedBox(
-        height: 52,
-        child: Center(
-          child: SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-        ),
-      );
-    }
-
-    return SizedBox(
-      height: 52,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        itemCount: reciters.length,
-        separatorBuilder: (context, i) => const SizedBox(width: 8),
-        itemBuilder: (context, i) {
-          final reciter = reciters[i];
-          final selected = playlist.selectedReciterId == reciter.id;
-          return _ReciterChip(
-            reciter: reciter,
-            selected: selected,
-            onTap: () => playlist.selectReciter(reciter.id),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _ReciterChip extends StatelessWidget {
-  final Reciter reciter;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _ReciterChip({
-    required this.reciter,
-    required this.selected,
-    required this.onTap,
-  });
-
+class _ReciterSelectorHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final playlist = context.watch<PlaylistProvider>();
+    final selectedReciter = playlist.selectedReciter;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+    if (playlist.isLoadingReciters) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: selected
-              ? theme.colorScheme.primary
-              : (isDark ? AppColors.badgeDark : AppColors.badgeLight),
-          borderRadius: BorderRadius.circular(20),
+          color: isDark
+              ? AppColors.surfaceContainerDark
+              : AppColors.surfaceContainerLight,
+          borderRadius: BorderRadius.circular(14),
         ),
-        child: Text(
-          reciter.name.split(' ').take(2).join(' '),
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: selected
-                ? theme.colorScheme.onPrimary
-                : (isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight),
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+        child: Row(
+          children: [
+            const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Loading reciters from API...',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Material(
+        color: isDark
+            ? AppColors.surfaceContainerDark
+            : AppColors.surfaceContainerLight,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          onTap: () => showReciterSelectorModal(context),
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.mic_rounded,
+                    color: theme.colorScheme.primary,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'RECITER',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: isDark
+                              ? AppColors.mutedDark
+                              : AppColors.mutedLight,
+                          letterSpacing: 1,
+                          fontSize: 10,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        selectedReciter?.name ?? 'Select Reciter',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        'Change',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.unfold_more_rounded,
+                        size: 14,
+                        color: theme.colorScheme.onPrimary,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

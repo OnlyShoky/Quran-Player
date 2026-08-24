@@ -6,7 +6,7 @@ import '../providers/playlist_provider.dart';
 import '../providers/player_provider.dart';
 
 /// Persistent mini-player bar shown above the bottom nav when
-/// the playlist has at least one item.
+/// the playlist has at least one item or audio is active.
 class MiniPlayer extends StatelessWidget {
   const MiniPlayer({super.key});
 
@@ -17,13 +17,19 @@ class MiniPlayer extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    if (playlist.items.isEmpty) return const SizedBox.shrink();
+    final surah = player.currentSurah ??
+        (playlist.items.isNotEmpty
+            ? playlist.surahById(
+                playlist.items[player.currentIndex.clamp(0, playlist.items.length - 1)].surahId,
+              )
+            : null);
 
-    final currentIndex =
-        player.currentIndex.clamp(0, playlist.items.length - 1);
-    final currentItem = playlist.items[currentIndex];
-    final surah = playlist.surahById(currentItem.surahId);
     if (surah == null) return const SizedBox.shrink();
+
+    final currentIndex = player.currentIndex.clamp(
+      0,
+      playlist.items.isEmpty ? 0 : playlist.items.length - 1,
+    );
 
     return GestureDetector(
       onTap: () => context.go('/player'),
@@ -40,7 +46,7 @@ class MiniPlayer extends StatelessWidget {
         child: Row(
           children: [
             const SizedBox(width: 14),
-            // Surah number dot
+            // Surah number badge
             Container(
               width: 34,
               height: 34,
@@ -71,7 +77,9 @@ class MiniPlayer extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   Text(
-                    '${currentIndex + 1} of ${playlist.items.length}',
+                    playlist.items.isNotEmpty
+                        ? '${currentIndex + 1} of ${playlist.items.length}'
+                        : surah.nameAr,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
                     ),
@@ -81,25 +89,72 @@ class MiniPlayer extends StatelessWidget {
             ),
             // Prev
             IconButton(
-              onPressed: () =>
-                  player.skipPrevious(playlist.items.length),
+              onPressed: () {
+                final reciter = player.currentReciter ?? playlist.selectedReciter;
+                player.skipPrevious(
+                  playlist.items.length,
+                  onSkip: (prevIndex) {
+                    final item = playlist.items[prevIndex];
+                    final s = playlist.surahById(item.surahId);
+                    if (s != null && reciter != null) {
+                      player.loadAndPlay(surah: s, reciter: reciter, index: prevIndex);
+                    }
+                  },
+                );
+              },
               icon: const Icon(Icons.skip_previous_rounded, size: 22),
               color: theme.colorScheme.onSurface,
             ),
-            // Play/Pause
+            // Play/Pause/Buffering
             IconButton(
-              onPressed: player.togglePlayPause,
-              icon: Icon(
-                player.isPlaying
-                    ? Icons.pause_rounded
-                    : Icons.play_arrow_rounded,
-                size: 28,
-              ),
+              onPressed: () {
+                if (player.isPlaying) {
+                  player.pause();
+                } else if (player.state == PlaybackState.paused) {
+                  player.play();
+                } else {
+                  final reciter = player.currentReciter ?? playlist.selectedReciter;
+                  if (reciter != null) {
+                    player.loadAndPlay(
+                      surah: surah,
+                      reciter: reciter,
+                      index: currentIndex,
+                    );
+                  }
+                }
+              },
+              icon: player.isBuffering
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: theme.colorScheme.primary,
+                      ),
+                    )
+                  : Icon(
+                      player.isPlaying
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
+                      size: 28,
+                    ),
               color: theme.colorScheme.primary,
             ),
             // Next
             IconButton(
-              onPressed: () => player.skipNext(playlist.items.length),
+              onPressed: () {
+                final reciter = player.currentReciter ?? playlist.selectedReciter;
+                player.skipNext(
+                  playlist.items.length,
+                  onSkip: (nextIndex) {
+                    final item = playlist.items[nextIndex];
+                    final s = playlist.surahById(item.surahId);
+                    if (s != null && reciter != null) {
+                      player.loadAndPlay(surah: s, reciter: reciter, index: nextIndex);
+                    }
+                  },
+                );
+              },
               icon: const Icon(Icons.skip_next_rounded, size: 22),
               color: theme.colorScheme.onSurface,
             ),

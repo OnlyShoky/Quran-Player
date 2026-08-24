@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/models/reciter.dart';
 import '../../shared/providers/playlist_provider.dart';
 import '../../shared/providers/player_provider.dart';
+import '../../shared/widgets/reciter_selector_sheet.dart';
 
 class PlayerScreen extends StatelessWidget {
   const PlayerScreen({super.key});
@@ -22,12 +23,23 @@ class PlayerScreen extends StatelessWidget {
     final playlist = context.watch<PlaylistProvider>();
     final player = context.watch<PlayerProvider>();
 
-    if (playlist.items.isEmpty) {
+    if (playlist.items.isEmpty && player.currentSurah == null) {
       return Scaffold(
-        appBar: AppBar(),
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/surahs');
+              }
+            },
+          ),
+        ),
         body: Center(
           child: Text(
-            'No playlist yet.\nAdd surahs from the Surahs tab.',
+            'No playlist or track active.\nSelect a surah to play.',
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
@@ -37,18 +49,34 @@ class PlayerScreen extends StatelessWidget {
       );
     }
 
-    final currentIndex =
-        player.currentIndex.clamp(0, playlist.items.length - 1);
-    final currentItem = playlist.items[currentIndex];
-    final surah = playlist.surahById(currentItem.surahId);
-    if (surah == null) return const Scaffold();
-
-    final reciter = playlist.reciters.firstWhere(
-      (r) => r.id == currentItem.reciterId,
-      orElse: () => playlist.reciters.isNotEmpty 
-          ? playlist.reciters.first 
-          : const Reciter(id: -1, name: 'Unknown', style: '', serverUrl: ''),
+    final currentIndex = player.currentIndex.clamp(
+      0,
+      playlist.items.isEmpty ? 0 : playlist.items.length - 1,
     );
+
+    final surah = player.currentSurah ??
+        (playlist.items.isNotEmpty
+            ? playlist.surahById(playlist.items[currentIndex].surahId)
+            : null);
+
+    if (surah == null) {
+      return Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/surahs');
+              }
+            },
+          ),
+        ),
+      );
+    }
+
+    final reciter = player.currentReciter ?? playlist.selectedReciter;
 
     return Scaffold(
       body: SafeArea(
@@ -60,8 +88,14 @@ class PlayerScreen extends StatelessWidget {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 28),
-                    onPressed: () => Navigator.of(context).maybePop(),
+                    icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 32),
+                    onPressed: () {
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        context.go('/surahs');
+                      }
+                    },
                     tooltip: 'Back',
                   ),
                   const Spacer(),
@@ -72,7 +106,7 @@ class PlayerScreen extends StatelessWidget {
                     ),
                   ),
                   const Spacer(),
-                  const SizedBox(width: 48), // balance the back button
+                  const SizedBox(width: 48), // balance back button
                 ],
               ),
             ),
@@ -111,36 +145,65 @@ class PlayerScreen extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
 
-            // --- Reciter name ---
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                reciter.name,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: theme.colorScheme.primary,
+            // --- Reciter name chip ---
+            GestureDetector(
+              onTap: () => showReciterSelectorModal(context),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.mic_rounded, size: 16, color: theme.colorScheme.primary),
+                    const SizedBox(width: 6),
+                    Text(
+                      reciter?.name ?? 'Select Reciter',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(Icons.unfold_more_rounded, size: 14, color: theme.colorScheme.primary),
+                  ],
                 ),
               ),
             ),
 
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
 
             // --- Playlist position ---
-            Text(
-              '${currentIndex + 1} of ${playlist.items.length}',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
+            if (playlist.items.isNotEmpty)
+              Text(
+                '${currentIndex + 1} of ${playlist.items.length}',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
+                ),
               ),
-            ),
+
+            // Error message display if any
+            if (player.errorMessage != null) ...[
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  player.errorMessage!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
 
             const Spacer(flex: 1),
 
-            // --- Progress ---
+            // --- Progress Slider ---
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
@@ -182,24 +245,51 @@ class PlayerScreen extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // --- Controls ---
+            // --- Playback Controls ---
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Previous
+                // Previous Track
                 _ControlButton(
                   icon: Icons.skip_previous_rounded,
                   size: 36,
                   color: currentIndex > 0
                       ? theme.colorScheme.onSurface
                       : (isDark ? AppColors.outlineDark : AppColors.outlineLight),
-                  onTap: () => player.skipPrevious(playlist.items.length),
+                  onTap: () {
+                    player.skipPrevious(
+                      playlist.items.length,
+                      onSkip: (prevIndex) {
+                        final prevItem = playlist.items[prevIndex];
+                        final prevSurah = playlist.surahById(prevItem.surahId);
+                        if (prevSurah != null && reciter != null) {
+                          player.loadAndPlay(
+                            surah: prevSurah,
+                            reciter: reciter,
+                            index: prevIndex,
+                          );
+                        }
+                      },
+                    );
+                  },
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 20),
 
-                // Play / Pause
+                // Play / Pause / Loading
                 GestureDetector(
-                  onTap: player.togglePlayPause,
+                  onTap: () {
+                    if (player.isPlaying) {
+                      player.pause();
+                    } else if (player.state == PlaybackState.paused) {
+                      player.play();
+                    } else if (reciter != null) {
+                      player.loadAndPlay(
+                        surah: surah,
+                        reciter: reciter,
+                        index: currentIndex,
+                      );
+                    }
+                  },
                   child: Container(
                     width: 72,
                     height: 72,
@@ -214,25 +304,51 @@ class PlayerScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: Icon(
-                      player.isPlaying
-                          ? Icons.pause_rounded
-                          : Icons.play_arrow_rounded,
-                      color: theme.colorScheme.onPrimary,
-                      size: 38,
-                    ),
+                    child: player.isBuffering
+                        ? Center(
+                            child: SizedBox(
+                              width: 28,
+                              height: 28,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 3,
+                                color: theme.colorScheme.onPrimary,
+                              ),
+                            ),
+                          )
+                        : Icon(
+                            player.isPlaying
+                                ? Icons.pause_rounded
+                                : Icons.play_arrow_rounded,
+                            color: theme.colorScheme.onPrimary,
+                            size: 40,
+                          ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 20),
 
-                // Next
+                // Next Track
                 _ControlButton(
                   icon: Icons.skip_next_rounded,
                   size: 36,
                   color: currentIndex < playlist.items.length - 1
                       ? theme.colorScheme.onSurface
                       : (isDark ? AppColors.outlineDark : AppColors.outlineLight),
-                  onTap: () => player.skipNext(playlist.items.length),
+                  onTap: () {
+                    player.skipNext(
+                      playlist.items.length,
+                      onSkip: (nextIndex) {
+                        final nextItem = playlist.items[nextIndex];
+                        final nextSurah = playlist.surahById(nextItem.surahId);
+                        if (nextSurah != null && reciter != null) {
+                          player.loadAndPlay(
+                            surah: nextSurah,
+                            reciter: reciter,
+                            index: nextIndex,
+                          );
+                        }
+                      },
+                    );
+                  },
                 ),
               ],
             ),
