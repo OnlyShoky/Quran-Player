@@ -42,7 +42,13 @@ class QuranPlayerApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => PlaylistProvider()),
-        ChangeNotifierProvider(create: (_) => PlayerProvider()),
+        ChangeNotifierProxyProvider<PlaylistProvider, PlayerProvider>(
+          create: (_) => PlayerProvider(),
+          update: (_, playlist, player) {
+            player!.updatePlaylistProvider(playlist);
+            return player;
+          },
+        ),
       ],
       child: Builder(
         builder: (context) {

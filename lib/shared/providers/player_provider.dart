@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import '../../core/models/surah.dart';
 import '../../core/models/reciter.dart';
+import 'playlist_provider.dart';
 
 enum PlaybackState { stopped, playing, paused, buffering }
 
@@ -14,7 +15,7 @@ class PlayerProvider extends ChangeNotifier {
   double _progress = 0.0;
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
-  
+
   Surah? _currentSurah;
   Reciter? _currentReciter;
   String? _currentAudioUrl;
@@ -23,6 +24,8 @@ class PlayerProvider extends ChangeNotifier {
   StreamSubscription? _playerStateSub;
   StreamSubscription? _positionSub;
   StreamSubscription? _durationSub;
+
+  PlaylistProvider? _playlistProvider;
 
   PlaybackState get state => _state;
   int get currentIndex => _currentIndex;
@@ -39,6 +42,10 @@ class PlayerProvider extends ChangeNotifier {
     _initAudioListeners();
   }
 
+  void updatePlaylistProvider(PlaylistProvider playlistProvider) {
+    _playlistProvider = playlistProvider;
+  }
+
   void _initAudioListeners() {
     _playerStateSub = _audioPlayer.playerStateStream.listen((playerState) {
       final playing = playerState.playing;
@@ -47,15 +54,14 @@ class PlayerProvider extends ChangeNotifier {
       if (processingState == ProcessingState.loading ||
           processingState == ProcessingState.buffering) {
         _state = PlaybackState.buffering;
-      } else if (!playing) {
+      } else if (!playing && processingState != ProcessingState.completed) {
         _state = PlaybackState.paused;
-      } else if (processingState != ProcessingState.completed) {
+      } else if (playing && processingState != ProcessingState.completed) {
         _state = PlaybackState.playing;
       } else if (processingState == ProcessingState.completed) {
         _state = PlaybackState.stopped;
         _position = Duration.zero;
         _progress = 0.0;
-        // Auto play next surah if available (handled via callback or external call)
         _onTrackCompleted();
       }
       notifyListeners();
@@ -80,17 +86,17 @@ class PlayerProvider extends ChangeNotifier {
     });
   }
 
-  Function(int completedIndex)? onTrackCompletedCallback;
-
   void _onTrackCompleted() {
-    if (onTrackCompletedCallback != null) {
-      onTrackCompletedCallback!(_currentIndex);
+    if (_playlistProvider != null && _playlistProvider!.items.isNotEmpty) {
+      if (_currentIndex < _playlistProvider!.items.length - 1) {
+        playIndex(_currentIndex + 1);
+      }
     }
   }
 
   /// Construct audio URL: serverUrl + 3-digit surah id + .mp3
   String getAudioUrl(Surah surah, Reciter reciter) {
-    var server = reciter.serverUrl;
+    var server = reciter.serverUrl.trim();
     if (!server.endsWith('/')) {
       server = '$server/';
     }
@@ -115,7 +121,12 @@ class PlayerProvider extends ChangeNotifier {
       _state = PlaybackState.buffering;
       notifyListeners();
 
-      await _audioPlayer.setUrl(url);
+      // Reset previous playback and set new AudioSource
+      await _audioPlayer.stop();
+      await _audioPlayer.setAudioSource(
+        AudioSource.uri(Uri.parse(url)),
+        preload: true,
+      );
       await _audioPlayer.play();
     } catch (e) {
       _errorMessage = 'Failed to load audio: $e';
@@ -124,9 +135,24 @@ class PlayerProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> playIndex(int index) async {
+    if (_playlistProvider == null || _playlistProvider!.items.isEmpty) return;
+    if (index < 0 || index >= _playlistProvider!.items.length) return;
+
+    final item = _playlistProvider!.items[index];
+    final surah = _playlistProvider!.surahById(item.surahId);
+    final reciter = _playlistProvider!.selectedReciter ?? _currentReciter;
+
+    if (surah != null && reciter != null) {
+      await loadAndPlay(surah: surah, reciter: reciter, index: index);
+    }
+  }
+
   void play() {
     if (_currentAudioUrl != null) {
       _audioPlayer.play();
+    } else if (_playlistProvider != null && _playlistProvider!.items.isNotEmpty) {
+      playIndex(0);
     }
   }
 
@@ -137,8 +163,10 @@ class PlayerProvider extends ChangeNotifier {
   void togglePlayPause() {
     if (isPlaying) {
       pause();
-    } else {
+    } else if (_state == PlaybackState.paused) {
       play();
+    } else {
+      playIndex(_currentIndex);
     }
   }
 
@@ -149,23 +177,17 @@ class PlayerProvider extends ChangeNotifier {
     }
   }
 
-  void skipNext(int playlistLength, {Function(int nextIndex)? onSkip}) {
-    if (_currentIndex < playlistLength - 1) {
-      final nextIdx = _currentIndex + 1;
-      if (onSkip != null) {
-        onSkip(nextIdx);
-      }
+  void skipNext() {
+    if (_playlistProvider != null && _currentIndex < _playlistProvider!.items.length - 1) {
+      playIndex(_currentIndex + 1);
     }
   }
 
-  void skipPrevious(int playlistLength, {Function(int prevIndex)? onSkip}) {
+  void skipPrevious() {
     if (_position.inSeconds > 5) {
       _audioPlayer.seek(Duration.zero);
     } else if (_currentIndex > 0) {
-      final prevIdx = _currentIndex - 1;
-      if (onSkip != null) {
-        onSkip(prevIdx);
-      }
+      playIndex(_currentIndex - 1);
     }
   }
 

@@ -89,40 +89,13 @@ class MiniPlayer extends StatelessWidget {
             ),
             // Prev
             IconButton(
-              onPressed: () {
-                final reciter = player.currentReciter ?? playlist.selectedReciter;
-                player.skipPrevious(
-                  playlist.items.length,
-                  onSkip: (prevIndex) {
-                    final item = playlist.items[prevIndex];
-                    final s = playlist.surahById(item.surahId);
-                    if (s != null && reciter != null) {
-                      player.loadAndPlay(surah: s, reciter: reciter, index: prevIndex);
-                    }
-                  },
-                );
-              },
+              onPressed: player.skipPrevious,
               icon: const Icon(Icons.skip_previous_rounded, size: 22),
               color: theme.colorScheme.onSurface,
             ),
             // Play/Pause/Buffering
             IconButton(
-              onPressed: () {
-                if (player.isPlaying) {
-                  player.pause();
-                } else if (player.state == PlaybackState.paused) {
-                  player.play();
-                } else {
-                  final reciter = player.currentReciter ?? playlist.selectedReciter;
-                  if (reciter != null) {
-                    player.loadAndPlay(
-                      surah: surah,
-                      reciter: reciter,
-                      index: currentIndex,
-                    );
-                  }
-                }
-              },
+              onPressed: player.togglePlayPause,
               icon: player.isBuffering
                   ? SizedBox(
                       width: 20,
@@ -142,19 +115,7 @@ class MiniPlayer extends StatelessWidget {
             ),
             // Next
             IconButton(
-              onPressed: () {
-                final reciter = player.currentReciter ?? playlist.selectedReciter;
-                player.skipNext(
-                  playlist.items.length,
-                  onSkip: (nextIndex) {
-                    final item = playlist.items[nextIndex];
-                    final s = playlist.surahById(item.surahId);
-                    if (s != null && reciter != null) {
-                      player.loadAndPlay(surah: s, reciter: reciter, index: nextIndex);
-                    }
-                  },
-                );
-              },
+              onPressed: player.skipNext,
               icon: const Icon(Icons.skip_next_rounded, size: 22),
               color: theme.colorScheme.onSurface,
             ),

@@ -256,40 +256,13 @@ class PlayerScreen extends StatelessWidget {
                   color: currentIndex > 0
                       ? theme.colorScheme.onSurface
                       : (isDark ? AppColors.outlineDark : AppColors.outlineLight),
-                  onTap: () {
-                    player.skipPrevious(
-                      playlist.items.length,
-                      onSkip: (prevIndex) {
-                        final prevItem = playlist.items[prevIndex];
-                        final prevSurah = playlist.surahById(prevItem.surahId);
-                        if (prevSurah != null && reciter != null) {
-                          player.loadAndPlay(
-                            surah: prevSurah,
-                            reciter: reciter,
-                            index: prevIndex,
-                          );
-                        }
-                      },
-                    );
-                  },
+                  onTap: player.skipPrevious,
                 ),
                 const SizedBox(width: 20),
 
                 // Play / Pause / Loading
                 GestureDetector(
-                  onTap: () {
-                    if (player.isPlaying) {
-                      player.pause();
-                    } else if (player.state == PlaybackState.paused) {
-                      player.play();
-                    } else if (reciter != null) {
-                      player.loadAndPlay(
-                        surah: surah,
-                        reciter: reciter,
-                        index: currentIndex,
-                      );
-                    }
-                  },
+                  onTap: player.togglePlayPause,
                   child: Container(
                     width: 72,
                     height: 72,
@@ -333,22 +306,7 @@ class PlayerScreen extends StatelessWidget {
                   color: currentIndex < playlist.items.length - 1
                       ? theme.colorScheme.onSurface
                       : (isDark ? AppColors.outlineDark : AppColors.outlineLight),
-                  onTap: () {
-                    player.skipNext(
-                      playlist.items.length,
-                      onSkip: (nextIndex) {
-                        final nextItem = playlist.items[nextIndex];
-                        final nextSurah = playlist.surahById(nextItem.surahId);
-                        if (nextSurah != null && reciter != null) {
-                          player.loadAndPlay(
-                            surah: nextSurah,
-                            reciter: reciter,
-                            index: nextIndex,
-                          );
-                        }
-                      },
-                    );
-                  },
+                  onTap: player.skipNext,
                 ),
               ],
             ),
