@@ -1,14 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+
 import '../../core/models/surah.dart';
 import '../../core/constants/app_colors.dart';
 import '../providers/playlist_provider.dart';
 import '../providers/player_provider.dart';
 
-/// A square mosaic tile representing one surah in the Fluid Mosaic grid.
-/// Faithfully adapted from the Fluid Mosaic HTML prototype.
+/// A fluid square mosaic tile representing one surah in the Fluid Mosaic grid.
+///
+/// =========================================================================
+/// 🛠 PARAMETERS YOU CAN CUSTOMIZE FOR TILE & TEXT SIZES:
+/// =========================================================================
+/// Edit the constants in `_MosaicTileState.build` inside LayoutBuilder:
+///  - `numSize`: Surah number size (top-left)
+///  - `arabicSize`: Arabic text size (center)
+///  - `nameSize`: English name size (bottom)
+///  - `tileBorderRadius`: Roundness of tile corners (e.g. 10.0, 14.0)
+/// =========================================================================
 class MosaicTile extends StatefulWidget {
   final Surah surah;
 
@@ -18,26 +27,17 @@ class MosaicTile extends StatefulWidget {
   State<MosaicTile> createState() => _MosaicTileState();
 }
 
-class _MosaicTileState extends State<MosaicTile>
-    with SingleTickerProviderStateMixin {
+class _MosaicTileState extends State<MosaicTile> {
   bool _pressed = false;
 
-  void _playSurah(BuildContext context) {
+  void _togglePlaylist(BuildContext context) {
     final playlist = context.read<PlaylistProvider>();
-    final player = context.read<PlayerProvider>();
+    final surahId = widget.surah.id;
 
-    final reciter = playlist.selectedReciter;
-    if (reciter == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a reciter first')),
-      );
-      return;
-    }
-
-    final index = playlist.ensureSurahInPlaylist(widget.surah.id);
-    if (index != -1) {
-      player.loadAndPlay(surah: widget.surah, reciter: reciter, index: index);
-      context.go('/player');
+    if (playlist.containsSurah(surahId)) {
+      playlist.removeSurah(surahId);
+    } else {
+      playlist.addSurah(surahId);
     }
   }
 
@@ -45,21 +45,29 @@ class _MosaicTileState extends State<MosaicTile>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final playlist = context.watch<PlaylistProvider>();
     final player = context.watch<PlayerProvider>();
 
+    final inPlaylist = playlist.containsSurah(widget.surah.id);
     final isCurrentlyPlaying =
         player.currentSurah?.id == widget.surah.id && player.isPlaying;
-    final isActive = isCurrentlyPlaying;
+
+    final isActive = inPlaylist || isCurrentlyPlaying;
+
+    final primaryColor = theme.colorScheme.primary;
+    final onPrimaryColor = theme.colorScheme.onPrimary;
 
     final tileBg = isActive
-        ? null // Uses gradient decoration instead
-        : (isDark ? AppColors.mosaicTileDark : AppColors.mosaicTileLight);
+        ? null
+        : (isDark
+              ? AppColors.surfaceContainerDark
+              : AppColors.surfaceContainerLight);
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) {
         setState(() => _pressed = false);
-        _playSurah(context);
+        _togglePlaylist(context);
       },
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedScale(
@@ -72,35 +80,36 @@ class _MosaicTileState extends State<MosaicTile>
             decoration: BoxDecoration(
               color: isActive ? null : tileBg,
               gradient: isActive
-                  ? const LinearGradient(
+                  ? LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        AppColors.mosaicActive,
-                        AppColors.mosaicActiveEnd,
+                        primaryColor,
+                        primaryColor.withValues(alpha: 0.85),
                       ],
                     )
                   : null,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(12), // ⚙️ Tile corner radius
               border: Border.all(
                 color: isActive
-                    ? AppColors.mosaicActiveGlow
+                    ? primaryColor
                     : (isDark
-                        ? Colors.white.withValues(alpha: 0.02)
-                        : Colors.black.withValues(alpha: 0.04)),
-                width: 1,
+                          ? AppColors.outlineDark.withValues(alpha: 0.3)
+                          : AppColors.outlineLight.withValues(alpha: 0.5)),
+                width: isActive ? 1.5 : 1,
               ),
               boxShadow: [
                 if (isActive)
                   BoxShadow(
-                    color: AppColors.mosaicActiveGlow.withValues(alpha: 0.2),
-                    blurRadius: 15,
+                    color: primaryColor.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   )
                 else
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
-                    blurRadius: 6,
-                    offset: const Offset(0, 4),
+                    color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.04),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
                   ),
               ],
             ),
@@ -108,10 +117,13 @@ class _MosaicTileState extends State<MosaicTile>
               builder: (context, constraints) {
                 final tileSize = constraints.maxWidth;
 
-                // Responsive font sizes based on tile size
-                final numSize = (tileSize * 0.14).clamp(9.0, 13.0);
-                final arabicSize = (tileSize * 0.35).clamp(18.0, 36.0);
-                final nameSize = (tileSize * 0.11).clamp(7.0, 11.0);
+                // =========================================================
+                // ⚙️ TWEAK FONT SIZES HERE:
+                // `(tileSize * multiplier).clamp(minSize, maxSize)`
+                // =========================================================
+                final numSize = (tileSize * 0.15).clamp(9.0, 13.0);
+                final arabicSize = (tileSize * 0.38).clamp(25.0, 50.0);
+                final nameSize = (tileSize * 0.12).clamp(15.0, 20.0);
 
                 return Stack(
                   children: [
@@ -126,10 +138,8 @@ class _MosaicTileState extends State<MosaicTile>
                           fontSize: numSize,
                           fontWeight: FontWeight.w900,
                           color: isActive
-                              ? AppColors.mosaicActiveMuted
-                              : (isDark
-                                  ? AppColors.mutedDark
-                                  : AppColors.mutedLight),
+                              ? onPrimaryColor.withValues(alpha: 0.85)
+                              : primaryColor,
                         ),
                       ),
                     ),
@@ -140,15 +150,15 @@ class _MosaicTileState extends State<MosaicTile>
                         top: tileSize * 0.06,
                         right: tileSize * 0.08,
                         child: Container(
-                          width: 8,
-                          height: 8,
+                          width: (tileSize * 0.10).clamp(5.0, 8.0),
+                          height: (tileSize * 0.10).clamp(5.0, 8.0),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: onPrimaryColor,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.white.withValues(alpha: 0.6),
-                                blurRadius: 5,
+                                color: onPrimaryColor.withValues(alpha: 0.7),
+                                blurRadius: 4,
                               ),
                             ],
                           ),
@@ -160,18 +170,18 @@ class _MosaicTileState extends State<MosaicTile>
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          SizedBox(height: tileSize * 0.08),
-                          // Arabic name
+                          SizedBox(height: tileSize * 0.05),
+                          // Arabic name (Center)
                           Text(
                             widget.surah.nameAr,
                             style: GoogleFonts.amiri(
                               fontSize: arabicSize,
                               fontWeight: FontWeight.w700,
                               color: isActive
-                                  ? Colors.white
+                                  ? onPrimaryColor
                                   : (isDark
-                                      ? AppColors.onSurfaceDark
-                                      : AppColors.onSurfaceLight),
+                                        ? AppColors.onSurfaceDark
+                                        : AppColors.onSurfaceLight),
                               height: 1.1,
                             ),
                             textAlign: TextAlign.center,
@@ -179,10 +189,11 @@ class _MosaicTileState extends State<MosaicTile>
                             overflow: TextOverflow.visible,
                           ),
                           SizedBox(height: tileSize * 0.02),
-                          // English name
+                          // English name (Bottom)
                           Padding(
                             padding: EdgeInsets.symmetric(
-                                horizontal: tileSize * 0.05),
+                              horizontal: tileSize * 0.05,
+                            ),
                             child: Text(
                               widget.surah.nameEn.toUpperCase(),
                               style: TextStyle(
@@ -190,11 +201,11 @@ class _MosaicTileState extends State<MosaicTile>
                                 fontSize: nameSize,
                                 fontWeight: FontWeight.w800,
                                 color: isActive
-                                    ? Colors.white
+                                    ? onPrimaryColor.withValues(alpha: 0.9)
                                     : (isDark
-                                        ? const Color(0xFF94a3b8)
-                                        : AppColors.mutedLight),
-                                letterSpacing: 0.3,
+                                          ? AppColors.mutedDark
+                                          : AppColors.mutedLight),
+                                letterSpacing: 0.2,
                               ),
                               textAlign: TextAlign.center,
                               maxLines: 1,

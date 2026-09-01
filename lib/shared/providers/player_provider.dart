@@ -44,6 +44,43 @@ class PlayerProvider extends ChangeNotifier {
 
   void updatePlaylistProvider(PlaylistProvider playlistProvider) {
     _playlistProvider = playlistProvider;
+    _syncWithPlaylist();
+  }
+
+  void _syncWithPlaylist() {
+    if (_playlistProvider == null) return;
+    final items = _playlistProvider!.items;
+
+    if (items.isEmpty) {
+      if (_currentSurah != null || _state != PlaybackState.stopped) {
+        _audioPlayer.stop();
+        _currentSurah = null;
+        _currentAudioUrl = null;
+        _state = PlaybackState.stopped;
+        _currentIndex = 0;
+        _position = Duration.zero;
+        _progress = 0.0;
+        notifyListeners();
+      }
+      return;
+    }
+
+    if (_currentSurah != null) {
+      final index = items.indexWhere((item) => item.surahId == _currentSurah!.id);
+      if (index != -1) {
+        _currentIndex = index;
+      } else {
+        // The currently playing/loaded surah was removed from the playlist
+        _audioPlayer.stop();
+        _currentSurah = null;
+        _currentAudioUrl = null;
+        _state = PlaybackState.stopped;
+        _currentIndex = 0;
+        _position = Duration.zero;
+        _progress = 0.0;
+        notifyListeners();
+      }
+    }
   }
 
   void _initAudioListeners() {

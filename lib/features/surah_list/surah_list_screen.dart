@@ -46,18 +46,12 @@ class _SurahListScreenState extends State<SurahListScreen> {
           }).toList();
 
     return Scaffold(
-      backgroundColor: isMosaic
-          ? (isDark ? AppColors.mosaicBgDark : null)
-          : null,
       body: CustomScrollView(
         slivers: [
           // --- App Bar ---
           SliverAppBar(
             floating: true,
             snap: true,
-            backgroundColor: isMosaic && isDark
-                ? AppColors.mosaicBgDark.withValues(alpha: 0.9)
-                : null,
             title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
