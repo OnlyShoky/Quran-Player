@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Corán Player - Fluid Mosaic v2</title>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@700&family=Inter:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #030712;
+      --tile-off: #111827;
+      --tile-off-hover: #1f2937;
+      --tile-on: #059669;       /* Verde vibrante para activo */
+      --tile-on-glow: #10b981;
+      --text-main: #f8fafc;
+      --text-muted: #64748b;
+      --text-on: #ffffff;
+      --gap: 8px;              /* Separación global */
+    }
+
+    * { 
+      box-sizing: border-box; margin: 0; padding: 0; 
+      font-family: 'Inter', sans-serif; 
+      -webkit-tap-highlight-color: transparent; 
+      user-select: none;
+    }
+    
+    body { 
+      background-color: var(--bg); 
+      color: var(--text-main); 
+      padding-bottom: 120px; 
+      padding-top: max(env(safe-area-inset-top), 10px); /* Para el notch del iPhone */
+    }
+
+    /* HEADER DINÁMICO */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(3, 7, 18, 0.9); backdrop-filter: blur(12px);
+      padding: 15px calc(var(--gap) * 2);
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .status-group { display: flex; flex-direction: column; }
+    .status-title { font-size: 1.1rem; font-weight: 900; letter-spacing: -0.5px; }
+    .status-sub { font-size: 0.75rem; font-weight: 700; color: var(--tile-on-glow); }
+    
+    .reciter-btn { 
+      background: var(--tile-off); color: var(--text-main); 
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 8px 16px; border-radius: 30px; 
+      font-weight: 800; font-size: 0.8rem; cursor: pointer;
+    }
+
+    /* MOSAICO FLUIDO (EL CORAZÓN DE LA MEJORA) */
+    .fluid-grid {
+      display: grid;
+      /* Grid fluido perfecto: mínimo 80px, máximo lo que de la pantalla repartido por igual */
+      grid-template-columns: repeat(auto-fill, minmax(max(80px, calc((100vw - (var(--gap) * 6)) / 5)), 1fr));
+      gap: var(--gap);
+      padding: var(--gap);
+    }
+
+    /* En pantallas muy estrechas, forzamos 4 columnas */
+    @media (max-width: 400px) {
+      .fluid-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    /* En modo horizontal o tablets, forzamos de 6 a 8 columnas */
+    @media (min-width: 600px) {
+      .fluid-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+    }
+
+    .tile {
+      background: var(--tile-off);
+      border-radius: 14px;
+      aspect-ratio: 1 / 1;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      position: relative; cursor: pointer;
+      container-type: inline-size; /* Contenedor para tamaño tipográfico fluido */
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.02);
+    }
+
+    /* Efecto Botón Físico */
+    .tile:active { transform: scale(0.92); }
+    
+    .tile.active {
+      background: linear-gradient(135deg, var(--tile-on), #047857);
+      border-color: var(--tile-on-glow);
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.2), inset 0 2px 4px rgba(255,255,255,0.2);
+    }
+
+    /* Elementos internos usando CQW (Container Query Width) para no desbordar JAMÁS */
+    .tile-num {
+      position: absolute; top: 6%; left: 8%;
+      font-size: clamp(0.6rem, 15cqw, 0.9rem);
+      font-weight: 900; color: var(--text-muted);
+    }
+    .tile.active .tile-num { color: #a7f3d0; }
+
+    .tile-arabic {
+      font-family: 'Amiri', serif;
+      /* Tipografía fluida relativa a su cuadrado */
+      font-size: clamp(1.5rem, 40cqw, 2.5rem);
+      line-height: 1.1; margin-top: 5%;
+      color: var(--text-main);
+    }
+
+    .tile-name {
+      font-size: clamp(0.55rem, 12cqw, 0.8rem);
+      font-weight: 800; text-transform: uppercase; text-align: center;
+      width: 90%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      color: #94a3b8; margin-top: 2%;
+    }
+    .tile.active .tile-name, .tile.active .tile-arabic { color: var(--text-on); font-weight: 900; }
+
+    /* Indicador Visual Integrado */
+    .indicator {
+      position: absolute; top: 6%; right: 8%;
+      width: 8px; height: 8px; border-radius: 50%;
+      background: transparent;
+      transition: background 0.2s;
+    }
+    .tile.active .indicator { background: #ffffff; box-shadow: 0 0 5px #fff; }
+
+    /* REPRODUCTOR FLOTANTE INFERIOR (Ocultable) */
+    .player-dock {
+      position: fixed; bottom: var(--gap); left: var(--gap); right: var(--gap);
+      background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(15px);
+      padding: 12px 16px; border-radius: 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+      
+      transform: translateY(150%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 1000;
+    }
+    
+    /* Soporte Safe Area iPhone */
+    @supports (padding-bottom: env(safe-area-inset-bottom)) {
+      .player-dock { bottom: max(var(--gap), env(safe-area-inset-bottom)); }
+    }
+
+    .player-dock.visible { transform: translateY(0); }
+
+    .player-info { display: flex; flex-direction: column; max-width: 65%; }
+    .now-playing { font-size: 1rem; font-weight: 900; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .queue-info { font-size: 0.75rem; color: var(--tile-on-glow); font-weight: 700; margin-top: 2px;}
+
+    .player-controls { display: flex; gap: 8px; }
+    .btn-dock {
+      border: none; border-radius: 14px; font-weight: 900;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+    }
+    .btn-x { background: rgba(255,255,255,0.1); color: #fff; width: 45px; height: 45px; font-size: 1rem; }
+    .btn-x:active { background: #ef4444; }
+    
+    .btn-play { background: var(--tile-on-glow); color: #000; width: 60px; height: 45px; font-size: 1.5rem; }
+    .btn-play:active { transform: scale(0.95); }
+
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="status-group">
+      <span class="status-title">Fluid Mosaic</span>
+      <span class="status-sub" id="headerCount">Selecciona capítulos</span>
+    </div>
+    <button class="reciter-btn">🎙 Mishary</button>
+  </header>
+
+  <!-- Mosaico Fluido -->
+  <main class="fluid-grid" id="grid"></main>
+
+  <!-- Reproductor Flotante -->
+  <div class="player-dock" id="playerDock">
+    <div class="player-info">
+      <div class="now-playing" id="nowPlayingText">Listo para escuchar</div>
+      <div class="queue-info" id="queueInfoText">0 capítulos</div>
+    </div>
+    <div class="player-controls">
+      <button class="btn-dock btn-x" onclick="clearAll()">✕</button>
+      <button class="btn-dock btn-play" id="playBtn" onclick="togglePlay()">▶</button>
+    </div>
+  </div>
+
+  <script>
+    // Los 114 Capítulos (Data reducida aquí por longitud, pero asume los 114)
+    const surahs = [
+      { id: 1, name: "Al-Fátiha", arabic: "الفاتحة" },
+      { id: 2, name: "Al-Báqara", arabic: "البقرة" },
+      { id: 3, name: "Aal-Imran", arabic: "آل عمران" },
+      { id: 4, name: "An-Nisa", arabic: "النساء" },
+      { id: 5, name: "Al-Ma'ida", arabic: "المائدة" },
+      { id: 6, name: "Al-An'am", arabic: "الأنعام" },
+      { id: 7, name: "Al-A'raf", arabic: "الأعراف" },
+      { id: 8, name: "Al-Anfal", arabic: "الأنفال" },
+      { id: 9, name: "At-Tawbah", arabic: "التوبة" },
+      { id: 10, name: "Yunus", arabic: "يونس" },
+      { id: 11, name: "Hud", arabic: "هود" },
+      { id: 12, name: "Yusuf", arabic: "يوسف" },
+      { id: 13, name: "Ar-Ra'd", arabic: "الرعد" },
+      { id: 14, name: "Ibrahim", arabic: "إبراهيم" },
+      { id: 15, name: "Al-Hijr", arabic: "الحجر" },
+      { id: 16, name: "An-Nahl", arabic: "النحل" },
+      { id: 17, name: "Al-Isra", arabic: "الإسراء" },
+      { id: 18, name: "Al-Kahf", arabic: "الكهف" },
+      { id: 19, name: "Maryam", arabic: "مريم" },
+      { id: 20, name: "Ta-Ha", arabic: "طه" },
+      { id: 21, name: "Al-Anbiya", arabic: "الأنبياء" },
+      { id: 22, name: "Al-Hajj", arabic: "الحج" },
+      { id: 23, name: "Al-Mu'minun", arabic: "المؤمنون" },
+      { id: 24, name: "An-Nur", arabic: "النور" },
+      { id: 25, name: "Al-Furqan", arabic: "الفرقان" },
+      { id: 26, name: "Ash-Shu'ara", arabic: "الشعراء" },
+      { id: 27, name: "An-Naml", arabic: "النمل" },
+      { id: 28, name: "Al-Qasas", arabic: "القصص" },
+      { id: 29, name: "Al-Ankabut", arabic: "العنكبوت" },
+      { id: 30, name: "Ar-Rum", arabic: "الروم" },
+      { id: 31, name: "Luqman", arabic: "لقمان" },
+      { id: 32, name: "As-Sajdah", arabic: "السجدة" },
+      { id: 33, name: "Al-Ahzab", arabic: "الأحزاب" },
+      { id: 34, name: "Saba", arabic: "سبأ" },
+      { id: 35, name: "Fatir", arabic: "فاطر" },
+      { id: 36, name: "Ya-Sin", arabic: "يس" },
+      { id: 37, name: "As-Saffat", arabic: "الصافات" },
+      { id: 38, name: "Sad", arabic: "ص" },
+      { id: 39, name: "Az-Zumar", arabic: "الزمر" },
+      { id: 40, name: "Ghafir", arabic: "غافر" },
+      { id: 41, name: "Fussilat", arabic: "فصلت" },
+      { id: 42, name: "Ash-Shura", arabic: "الشورى" },
+      { id: 43, name: "Az-Zukhruf", arabic: "الزخرف" },
+      { id: 44, name: "Ad-Dukhan", arabic: "الدخان" },
+      { id: 45, name: "Al-Jathiyah", arabic: "الجاثية" },
+      { id: 46, name: "Al-Ahqaf", arabic: "الأحقاف" },
+      { id: 47, name: "Muhammad", arabic: "محمد" },
+      { id: 48, name: "Al-Fath", arabic: "الفتح" },
+      { id: 49, name: "Al-Hujurat", arabic: "الحجرات" },
+      { id: 50, name: "Qaf", arabic: "ق" },
+      { id: 51, name: "Adh-Dhariyat", arabic: "الذاريات" },
+      { id: 52, name: "At-Tur", arabic: "الطور" },
+      { id: 53, name: "An-Najm", arabic: "النجم" },
+      { id: 54, name: "Al-Qamar", arabic: "القمر" },
+      { id: 55, name: "Ar-Rahman", arabic: "الرحمن" },
+      { id: 56, name: "Al-Waqi'ah", arabic: "الواقعة" },
+      { id: 57, name: "Al-Hadid", arabic: "الحديد" },
+      { id: 58, name: "Al-Mujadila", arabic: "المجادلة" },
+      { id: 59, name: "Al-Hashr", arabic: "الحشر" },
+      { id: 60, name: "Al-Mumtahanah", arabic: "الممتحنة" },
+      { id: 61, name: "As-Saff", arabic: "الصف" },
+      { id: 62, name: "Al-Jumu'ah", arabic: "الجمعة" },
+      { id: 63, name: "Al-Munafiqun", arabic: "المنافقون" },
+      { id: 64, name: "At-Taghabun", arabic: "التغابن" },
+      { id: 65, name: "At-Talaq", arabic: "الطلاق" },
+      { id: 66, name: "At-Tahrim", arabic: "التحريم" },
+      { id: 67, name: "Al-Mulk", arabic: "الملك" },
+      { id: 68, name: "Al-Qalam", arabic: "القلم" },
+      { id: 69, name: "Al-Haqqah", arabic: "الحاقة" },
+      { id: 70, name: "Al-Ma'arij", arabic: "المعارج" },
+      { id: 71, name: "Nuh", arabic: "نوح" },
+      { id: 72, name: "Al-Jinn", arabic: "الجن" },
+      { id: 73, name: "Al-Muzzammil", arabic: "المزمل" },
+      { id: 74, name: "Al-Muddaththir", arabic: "المدثر" },
+      { id: 75, name: "Al-Qiyamah", arabic: "القيامة" },
+      { id: 76, name: "Al-Insan", arabic: "الإنسان" },
+      { id: 77, name: "Al-Mursalat", arabic: "المرسلات" },
+      { id: 78, name: "An-Naba", arabic: "النبأ" },
+      { id: 79, name: "An-Nazi'at", arabic: "النازعات" },
+      { id: 80, name: "Abasa", arabic: "عبس" },
+      { id: 81, name: "At-Takwir", arabic: "التكوير" },
+      { id: 82, name: "Al-Infitar", arabic: "الانفطار" },
+      { id: 83, name: "Al-Mutaffifin", arabic: "المطففين" },
+      { id: 84, name: "Al-Inshiqaq", arabic: "الانشقاق" },
+      { id: 85, name: "Al-Buruj", arabic: "البروج" },
+      { id: 86, name: "At-Tariq", arabic: "الطارق" },
+      { id: 87, name: "Al-A'la", arabic: "الأعلى" },
+      { id: 88, name: "Al-Ghashiyah", arabic: "الغاشية" },
+      { id: 89, name: "Al-Fajr", arabic: "الفجر" },
+      { id: 90, name: "Al-Balad", arabic: "البلد" },
+      { id: 91, name: "Ash-Shams", arabic: "الشمس" },
+      { id: 92, name: "Al-Layl", arabic: "الليل" },
+      { id: 93, name: "Ad-Duha", arabic: "الضحى" },
+      { id: 94, name: "Ash-Sharh", arabic: "الشرح" },
+      { id: 95, name: "At-Tin", arabic: "التين" },
+      { id: 96, name: "Al-Alaq", arabic: "العلق" },
+      { id: 97, name: "Al-Qadr", arabic: "القدر" },
+      { id: 98, name: "Al-Bayyinah", arabic: "البينة" },
+      { id: 99, name: "Az-Zalzalah", arabic: "الزلزلة" },
+      { id: 100, name: "Al-Adiyat", arabic: "العاديات" },
+      { id: 101, name: "Al-Qari'ah", arabic: "القارعة" },
+      { id: 102, name: "At-Takathur", arabic: "التكاثر" },
+      { id: 103, name: "Al-Asr", arabic: "العصر" },
+      { id: 104, name: "Al-Humazah", arabic: "الهمزة" },
+      { id: 105, name: "Al-Fil", arabic: "الفيل" },
+      { id: 106, name: "Quraysh", arabic: "قريش" },
+      { id: 107, name: "Al-Ma'un", arabic: "الماعون" },
+      { id: 108, name: "Al-Kawthar", arabic: "الكوثر" },
+      { id: 109, name: "Al-Kafirun", arabic: "الكافرون" },
+      { id: 110, name: "An-Nasr", arabic: "النصر" },
+      { id: 111, name: "Al-Masad", arabic: "المسد" },
+      { id: 112, name: "Al-Ikhlas", arabic: "الإخلاص" },
+      { id: 113, name: "Al-Falaq", arabic: "الفلق" },
+      { id: 114, name: "An-Nas", arabic: "الناس" }
+    ];
+
+    let queue = new Set();
+    let isPlaying = false;
+    let lastAdded = null;
+
+    function renderGrid() {
+      const container = document.getElementById('grid');
+      container.innerHTML = "";
+      
+      const fragment = document.createDocumentFragment();
+
+      surahs.forEach(s => {
+        const isQueued = queue.has(s.id);
+        const tile = document.createElement('div');
+        tile.className = `tile ${isQueued ? 'active' : ''}`;
+        tile.id = `tile-${s.id}`;
+        
+        // Al tocar cualquier parte del cuadrado, se dispara la acción
+        tile.onclick = () => toggleSurah(s.id, s.name);
+
+        tile.innerHTML = `
+          <span class="tile-num">${s.id}</span>
+          <div class="indicator"></div>
+          <span class="tile-arabic">${s.arabic}</span>
+          <span class="tile-name">${s.name}</span>
+        `;
+        fragment.appendChild(tile);
+      });
+      
+      container.appendChild(fragment);
+      updateUI();
+    }
+
+    function toggleSurah(id, name) {
+      const tile = document.getElementById(`tile-${id}`);
+      
+      if (queue.has(id)) {
+        queue.delete(id);
+        if(queue.size === 0) lastAdded = null;
+      } else {
+        queue.add(id);
+        lastAdded = { id, name };
+        
+        // Pequeña animación de rebote extra al añadir
+        tile.style.transform = "scale(0.85)";
+        setTimeout(() => tile.style.transform = "", 150);
+      }
+      
+      tile.classList.toggle('active');
+      updateUI();
+    }
+
+    function updateUI() {
+      const dock = document.getElementById('playerDock');
+      const count = queue.size;
+      
+      if (count > 0) {
+        dock.classList.add('visible');
+        document.getElementById('headerCount').innerText = `${count} seleccionados`;
+        
+        if (lastAdded) {
+          document.getElementById('nowPlayingText').innerText = `${lastAdded.id}. ${lastAdded.name}`;
+        }
+        document.getElementById('queueInfoText').innerText = `Lista activa: ${count}`;
+      } else {
+        dock.classList.remove('visible');
+        document.getElementById('headerCount').innerText = 'Selecciona capítulos';
+        isPlaying = false;
+        document.getElementById('playBtn').innerText = '▶';
+      }
+    }
+
+    function clearAll() {
+      queue.clear();
+      lastAdded = null;
+      
+      // Quitar la clase active de todos los tiles sin re-renderizar todo el DOM
+      document.querySelectorAll('.tile.active').forEach(tile => {
+        tile.classList.remove('active');
+      });
+      
+      updateUI();
+    }
+
+    function togglePlay() {
+      isPlaying = !isPlaying;
+      document.getElementById('playBtn').innerText = isPlaying ? '❚❚' : '▶';
+    }
+
+    // Inicializar la grid
+    renderGrid();
+  </script>
+</body>
+</html>

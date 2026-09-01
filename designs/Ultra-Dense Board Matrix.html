@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Corán Player - Ultra-Dense Board Matrix</title>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@700&family=Inter:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #030712;
+      --card-off: #0f172a;
+      --card-hover: #1e293b;
+      --card-on: #059669;
+      --text: #f8fafc;
+      --text-muted: #64748b;
+      --accent: #10b981;
+      --accent-gold: #f59e0b;
+      --gap: 4px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; user-select: none; }
+    body { background-color: var(--bg); color: var(--text); padding-bottom: 70px; }
+
+    /* Barra Superior Ultra-Compacta (1 Sola Fila) */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(3, 7, 18, 0.95); backdrop-filter: blur(10px);
+      padding: 6px 12px; border-bottom: 1px solid #1e293b;
+      display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    }
+
+    .brand-group { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .title { font-size: 0.95rem; font-weight: 900; color: #fff; }
+    .badge { background: var(--accent); color: #000; font-size: 0.75rem; font-weight: 900; padding: 1px 7px; border-radius: 10px; }
+
+    .reciter-select {
+      background: var(--card-off); border: 1px solid #334155; color: var(--accent-gold);
+      padding: 6px 10px; border-radius: 6px; font-weight: 700; font-size: 0.8rem; outline: none; cursor: pointer;
+    }
+
+    .search-input {
+      background: var(--card-off); border: 1px solid #334155; color: #fff;
+      padding: 6px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; outline: none; width: 140px;
+    }
+    .search-input:focus { border-color: var(--accent); }
+
+    /* GRID ULTRA-DENSO: En desktop muestra 15-20 elementos por fila */
+    .dense-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+      gap: var(--gap);
+      padding: var(--gap);
+    }
+
+    /* Celda Compacta de Altura Reducida (55px) */
+    .tile {
+      background: var(--card-off);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 6px;
+      height: 55px;
+      padding: 4px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      cursor: pointer;
+      position: relative;
+      transition: background 0.1s, border-color 0.1s;
+    }
+    .tile:hover { background: var(--card-hover); }
+    .tile.active { background: var(--card-on); border-color: var(--accent); }
+
+    .tile-top { display: flex; justify-content: space-between; align-items: center; line-height: 1; }
+    .tile-num { font-size: 0.65rem; font-weight: 900; color: var(--text-muted); }
+    .tile.active .tile-num { color: #a7f3d0; }
+
+    .tile-check { font-size: 0.65rem; font-weight: 900; opacity: 0; }
+    .tile.active .tile-check { opacity: 1; color: #fff; }
+
+    .tile-arabic { font-family: 'Amiri', serif; font-size: 1.05rem; text-align: center; color: var(--text); line-height: 1; margin: 1px 0; }
+    .tile-name { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #94a3b8; }
+    .tile.active .tile-name { color: #fff; }
+
+    /* Barra de Reproducción Inferior Fina */
+    .player-bar {
+      position: fixed; bottom: 0; left: 0; right: 0; height: 50px;
+      background: #020617; border-top: 2px solid var(--accent);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 12px; z-index: 200;
+    }
+
+    .player-info { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .player-title { font-size: 0.85rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .player-reciter { font-size: 0.75rem; color: var(--accent-gold); font-weight: 700; white-space: nowrap; }
+
+    .player-controls { display: flex; align-items: center; gap: 6px; }
+    .btn-control {
+      border: none; border-radius: 6px; font-weight: 900; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; height: 36px;
+    }
+    .btn-clear { background: #334155; color: #fff; padding: 0 10px; font-size: 0.75rem; }
+    .btn-play { background: var(--accent); color: #000; width: 44px; font-size: 1.1rem; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand-group">
+      <span class="title">Corán Board</span>
+      <span class="badge" id="selectedBadge">0</span>
+    </div>
+
+    <select class="reciter-select" id="reciterSelect" onchange="updateReciter(this.value)">
+      <option value="Mishary Rashid Alafasy">Mishary Alafasy</option>
+      <option value="Abdul Rahman Al-Sudais">Abdul Rahman Al-Sudais</option>
+      <option value="Maher Al-Muaiqly">Maher Al-Muaiqly</option>
+      <option value="Yasser Al-Dosari">Yasser Al-Dosari</option>
+      <option value="Saad Al-Ghamdi">Saad Al-Ghamdi</option>
+      <option value="Abdul Basit">Abdul Basit</option>
+      <option value="Minshawi">Minshawi</option>
+      <option value="Husary">Husary</option>
+    </select>
+
+    <input type="text" class="search-input" id="searchInput" placeholder="Filtrar (ej: 36 o Ya)..." oninput="renderGrid(this.value)">
+  </header>
+
+  <main class="dense-grid" id="grid"></main>
+
+  <div class="player-bar">
+    <div class="player-info">
+      <div class="player-title" id="playerTitle">Selecciona capítulos</div>
+      <div class="player-reciter" id="playerReciter">Mishary Rashid Alafasy</div>
+    </div>
+    <div class="player-controls">
+      <button class="btn-control btn-clear" onclick="clearQueue()">VACIAR</button>
+      <button class="btn-control btn-play" id="playBtn" onclick="togglePlay()">▶</button>
+    </div>
+  </div>
+
+  <script>
+    const surahs = [
+      { id: 1, name: "Al-Fátiha", arabic: "الفاتحة" },
+      { id: 2, name: "Al-Báqara", arabic: "البقرة" },
+      { id: 3, name: "Aal-Imran", arabic: "آل عمران" },
+      { id: 4, name: "An-Nisa", arabic: "النساء" },
+      { id: 5, name: "Al-Ma'ida", arabic: "المائدة" },
+      { id: 6, name: "Al-An'am", arabic: "الأنعام" },
+      { id: 7, name: "Al-A'raf", arabic: "الأعراف" },
+      { id: 8, name: "Al-Anfal", arabic: "الأنفال" },
+      { id: 9, name: "At-Tawbah", arabic: "التوبة" },
+      { id: 10, name: "Yunus", arabic: "يونس" },
+      { id: 11, name: "Hud", arabic: "هود" },
+      { id: 12, name: "Yusuf", arabic: "يوسف" },
+      { id: 13, name: "Ar-Ra'd", arabic: "الرعد" },
+      { id: 14, name: "Ibrahim", arabic: "إبراهيم" },
+      { id: 15, name: "Al-Hijr", arabic: "الحجر" },
+      { id: 16, name: "An-Nahl", arabic: "النحل" },
+      { id: 17, name: "Al-Isra", arabic: "الإسراء" },
+      { id: 18, name: "Al-Kahf", arabic: "الكهف" },
+      { id: 19, name: "Maryam", arabic: "مريم" },
+      { id: 20, name: "Ta-Ha", arabic: "طه" },
+      { id: 21, name: "Al-Anbiya", arabic: "الأنبياء" },
+      { id: 22, name: "Al-Hajj", arabic: "الحج" },
+      { id: 23, name: "Al-Mu'minun", arabic: "المؤمنون" },
+      { id: 24, name: "An-Nur", arabic: "النور" },
+      { id: 25, name: "Al-Furqan", arabic: "الفرقان" },
+      { id: 26, name: "Ash-Shu'ara", arabic: "الشعراء" },
+      { id: 27, name: "An-Naml", arabic: "النمل" },
+      { id: 28, name: "Al-Qasas", arabic: "القصص" },
+      { id: 29, name: "Al-Ankabut", arabic: "العنكبوت" },
+      { id: 30, name: "Ar-Rum", arabic: "الروم" },
+      { id: 31, name: "Luqman", arabic: "لقمان" },
+      { id: 32, name: "As-Sajdah", arabic: "السجدة" },
+      { id: 33, name: "Al-Ahzab", arabic: "الأحزاب" },
+      { id: 34, name: "Saba", arabic: "سبأ" },
+      { id: 35, name: "Fatir", arabic: "فاطر" },
+      { id: 36, name: "Ya-Sin", arabic: "يس" },
+      { id: 37, name: "As-Saffat", arabic: "الصافات" },
+      { id: 38, name: "Sad", arabic: "ص" },
+      { id: 39, name: "Az-Zumar", arabic: "الزمر" },
+      { id: 40, name: "Ghafir", arabic: "غافر" },
+      { id: 41, name: "Fussilat", arabic: "فصلت" },
+      { id: 42, name: "Ash-Shura", arabic: "الشورى" },
+      { id: 43, name: "Az-Zukhruf", arabic: "الزخرف" },
+      { id: 44, name: "Ad-Dukhan", arabic: "الدخان" },
+      { id: 45, name: "Al-Jathiyah", arabic: "الجاثية" },
+      { id: 46, name: "Al-Ahqaf", arabic: "الأحقاف" },
+      { id: 47, name: "Muhammad", arabic: "محمد" },
+      { id: 48, name: "Al-Fath", arabic: "الفتح" },
+      { id: 49, name: "Al-Hujurat", arabic: "الحجرات" },
+      { id: 50, name: "Qaf", arabic: "ق" },
+      { id: 51, name: "Adh-Dhariyat", arabic: "الذاريات" },
+      { id: 52, name: "At-Tur", arabic: "الطور" },
+      { id: 53, name: "An-Najm", arabic: "النجم" },
+      { id: 54, name: "Al-Qamar", arabic: "القمر" },
+      { id: 55, name: "Ar-Rahman", arabic: "الرحمن" },
+      { id: 56, name: "Al-Waqi'ah", arabic: "الواقعة" },
+      { id: 57, name: "Al-Hadid", arabic: "الحديد" },
+      { id: 58, name: "Al-Mujadila", arabic: "المجادلة" },
+      { id: 59, name: "Al-Hashr", arabic: "الحشر" },
+      { id: 60, name: "Al-Mumtahanah", arabic: "الممتحنة" },
+      { id: 61, name: "As-Saff", arabic: "الصف" },
+      { id: 62, name: "Al-Jumu'ah", arabic: "الجمعة" },
+      { id: 63, name: "Al-Munafiqun", arabic: "المنافقون" },
+      { id: 64, name: "At-Taghabun", arabic: "التغابن" },
+      { id: 65, name: "At-Talaq", arabic: "الطلاق" },
+      { id: 66, name: "At-Tahrim", arabic: "التحريم" },
+      { id: 67, name: "Al-Mulk", arabic: "الملك" },
+      { id: 68, name: "Al-Qalam", arabic: "القلم" },
+      { id: 69, name: "Al-Haqqah", arabic: "الحاقة" },
+      { id: 70, name: "Al-Ma'arij", arabic: "المعارج" },
+      { id: 71, name: "Nuh", arabic: "نوح" },
+      { id: 72, name: "Al-Jinn", arabic: "الجن" },
+      { id: 73, name: "Al-Muzzammil", arabic: "المزمل" },
+      { id: 74, name: "Al-Muddaththir", arabic: "المدثر" },
+      { id: 75, name: "Al-Qiyamah", arabic: "القيامة" },
+      { id: 76, name: "Al-Insan", arabic: "الإنسان" },
+      { id: 77, name: "Al-Mursalat", arabic: "المرسلات" },
+      { id: 78, name: "An-Naba", arabic: "النبأ" },
+      { id: 79, name: "An-Nazi'at", arabic: "النازعات" },
+      { id: 80, name: "Abasa", arabic: "عبس" },
+      { id: 81, name: "At-Takwir", arabic: "التكوير" },
+      { id: 82, name: "Al-Infitar", arabic: "الانفطار" },
+      { id: 83, name: "Al-Mutaffifin", arabic: "المطففين" },
+      { id: 84, name: "Al-Inshiqaq", arabic: "الانشقاق" },
+      { id: 85, name: "Al-Buruj", arabic: "البروج" },
+      { id: 86, name: "At-Tariq", arabic: "الطارق" },
+      { id: 87, name: "Al-A'la", arabic: "الأعلى" },
+      { id: 88, name: "Al-Ghashiyah", arabic: "الغاشية" },
+      { id: 89, name: "Al-Fajr", arabic: "الفجر" },
+      { id: 90, name: "Al-Balad", arabic: "البلد" },
+      { id: 91, name: "Ash-Shams", arabic: "الشمس" },
+      { id: 92, name: "Al-Layl", arabic: "الليل" },
+      { id: 93, name: "Ad-Duha", arabic: "الضحى" },
+      { id: 94, name: "Ash-Sharh", arabic: "الشرح" },
+      { id: 95, name: "At-Tin", arabic: "التين" },
+      { id: 96, name: "Al-Alaq", arabic: "العلق" },
+      { id: 97, name: "Al-Qadr", arabic: "القدر" },
+      { id: 98, name: "Al-Bayyinah", arabic: "البينة" },
+      { id: 99, name: "Az-Zalzalah", arabic: "الزلزلة" },
+      { id: 100, name: "Al-Adiyat", arabic: "العاديات" },
+      { id: 101, name: "Al-Qari'ah", arabic: "القارعة" },
+      { id: 102, name: "At-Takathur", arabic: "التكاثر" },
+      { id: 103, name: "Al-Asr", arabic: "العصر" },
+      { id: 104, name: "Al-Humazah", arabic: "الهمزة" },
+      { id: 105, name: "Al-Fil", arabic: "الفيل" },
+      { id: 106, name: "Quraysh", arabic: "قريش" },
+      { id: 107, name: "Al-Ma'un", arabic: "الماعون" },
+      { id: 108, name: "Al-Kawthar", arabic: "الكوثر" },
+      { id: 109, name: "Al-Kafirun", arabic: "الكافرون" },
+      { id: 110, name: "An-Nasr", arabic: "النصر" },
+      { id: 111, name: "Al-Masad", arabic: "المسد" },
+      { id: 112, name: "Al-Ikhlas", arabic: "الإخلاص" },
+      { id: 113, name: "Al-Falaq", arabic: "الفلق" },
+      { id: 114, name: "An-Nas", arabic: "الناس" }
+    ];
+
+    let queue = new Set();
+    let isPlaying = false;
+
+    function renderGrid(filter = "") {
+      const container = document.getElementById('grid');
+      container.innerHTML = "";
+      const frag = document.createDocumentFragment();
+
+      const filtered = surahs.filter(s => 
+        s.name.toLowerCase().includes(filter.toLowerCase()) || 
+        s.id.toString() === filter.trim()
+      );
+
+      filtered.forEach(s => {
+        const isQueued = queue.has(s.id);
+        const tile = document.createElement('div');
+        tile.className = `tile ${isQueued ? 'active' : ''}`;
+        tile.id = `tile-${s.id}`;
+        tile.onclick = () => toggleSurah(s.id, s.name);
+
+        tile.innerHTML = `
+          <div class="tile-top">
+            <span class="tile-num">#${s.id}</span>
+            <span class="tile-check">✓</span>
+          </div>
+          <div class="tile-arabic">${s.arabic}</div>
+          <div class="tile-name">${s.name}</div>
+        `;
+        frag.appendChild(tile);
+      });
+
+      container.appendChild(frag);
+    }
+
+    function toggleSurah(id, name) {
+      const tile = document.getElementById(`tile-${id}`);
+      if (queue.has(id)) {
+        queue.delete(id);
+      } else {
+        queue.add(id);
+        document.getElementById('playerTitle').innerText = `${id}. ${name}`;
+      }
+      if (tile) tile.classList.toggle('active');
+      updateUI();
+    }
+
+    function updateUI() {
+      document.getElementById('selectedBadge').innerText = queue.size;
+      if (queue.size === 0) {
+        document.getElementById('playerTitle').innerText = 'Selecciona capítulos';
+      }
+    }
+
+    function updateReciter(name) {
+      document.getElementById('playerReciter').innerText = name;
+    }
+
+    function clearQueue() {
+      queue.clear();
+      document.querySelectorAll('.tile.active').forEach(t => t.classList.remove('active'));
+      updateUI();
+    }
+
+    function togglePlay() {
+      isPlaying = !isPlaying;
+      document.getElementById('playBtn').innerText = isPlaying ? '❚❚' : '▶';
+    }
+
+    renderGrid();
+  </script>
+</body>
+</html>

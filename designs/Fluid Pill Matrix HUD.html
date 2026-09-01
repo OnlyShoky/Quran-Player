@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Corán Player - Fluid Pill Matrix HUD</title>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@700&family=Inter:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #050811;
+      --surface: #0f172a;
+      --surface-hover: #1e293b;
+      --accent: #10b981;
+      --accent-active: #059669;
+      --accent-gold: #f59e0b;
+      --text: #f8fafc;
+      --text-muted: #64748b;
+      --border: #1e293b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; user-select: none; }
+    body { background-color: var(--bg-dark); color: var(--text); padding-bottom: 75px; overflow-x: hidden; }
+
+    /* Barra Superior Compacta */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(5, 8, 17, 0.95); backdrop-filter: blur(12px);
+      padding: 8px 12px; border-bottom: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 8px;
+    }
+
+    .top-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .brand { font-size: 0.95rem; font-weight: 900; display: flex; align-items: center; gap: 8px; }
+    .badge { background: var(--accent); color: #000; font-size: 0.75rem; font-weight: 900; padding: 2px 8px; border-radius: 20px; }
+
+    .reciter-select {
+      background: var(--surface); border: 1px solid var(--border); color: var(--accent-gold);
+      padding: 6px 10px; border-radius: 8px; font-weight: 700; font-size: 0.8rem; outline: none; cursor: pointer;
+    }
+
+    .search-input {
+      background: var(--surface); border: 1px solid var(--border); color: #fff;
+      padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; outline: none; min-width: 150px;
+    }
+    .search-input:focus { border-color: var(--accent); }
+
+    /* Presets de Un Clic */
+    .presets-bar { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+    .presets-bar::-webkit-scrollbar { display: none; }
+    .btn-preset {
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text-muted);
+      padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; white-space: nowrap; cursor: pointer;
+    }
+    .btn-preset:hover { background: var(--surface-hover); color: #fff; }
+
+    /* MATRIZ DE ETIQUETAS (PILLS) ULTRA-ADAPTABLE */
+    .pill-matrix {
+      display: grid;
+      /* En pantallas de PC ancha muestra 12-16 por fila; en móviles se ajusta limpio */
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 5px;
+      padding: 8px;
+    }
+
+    .pill {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      height: 42px;
+      transition: background 0.1s, border-color 0.1s;
+    }
+    .pill:hover { background: var(--surface-hover); }
+    .pill.selected {
+      background: var(--accent-active);
+      border-color: var(--accent);
+    }
+
+    .pill-left { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .pill-num { font-size: 0.7rem; font-weight: 900; color: var(--text-muted); flex-shrink: 0; }
+    .pill.selected .pill-num { color: #a7f3d0; }
+
+    .pill-name { font-size: 0.75rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pill.selected .pill-name { color: #fff; }
+
+    .pill-arabic { font-family: 'Amiri', serif; font-size: 0.95rem; color: var(--accent); flex-shrink: 0; }
+    .pill.selected .pill-arabic { color: #fff; }
+
+    /* Reproductor Inferior Fijo */
+    .player-hud {
+      position: fixed; bottom: 0; left: 0; right: 0; height: 55px;
+      background: #020617; border-top: 2px solid var(--accent);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16px; z-index: 200;
+    }
+
+    .hud-info { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .hud-title { font-size: 0.85rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .hud-reciter { font-size: 0.75rem; color: var(--accent-gold); font-weight: 700; white-space: nowrap; }
+
+    .hud-controls { display: flex; align-items: center; gap: 8px; }
+    .btn-hud {
+      border: none; border-radius: 8px; font-weight: 900; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; height: 38px;
+    }
+    .btn-clear { background: #334155; color: #fff; padding: 0 12px; font-size: 0.75rem; }
+    .btn-play { background: var(--accent); color: #000; width: 48px; font-size: 1.2rem; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="top-bar">
+      <div class="brand">
+        <span>📖 Corán HUD</span>
+        <span class="badge" id="selectedBadge">0</span>
+      </div>
+
+      <select class="reciter-select" id="reciterSelect" onchange="updateReciter(this.value)">
+        <option value="Mishary Rashid Alafasy">Mishary Rashid Alafasy</option>
+        <option value="Abdul Rahman Al-Sudais">Abdul Rahman Al-Sudais</option>
+        <option value="Maher Al-Muaiqly">Maher Al-Muaiqly</option>
+        <option value="Yasser Al-Dosari">Yasser Al-Dosari</option>
+        <option value="Saad Al-Ghamdi">Saad Al-Ghamdi</option>
+        <option value="Abdul Basit Abdul Samad">Abdul Basit</option>
+        <option value="Siddiq Al-Minshawi">Siddiq Al-Minshawi</option>
+      </select>
+
+      <input type="text" class="search-input" id="searchInput" placeholder="Filtrar (ej: 36 o Ya)..." oninput="renderMatrix(this.value)">
+    </div>
+
+    <!-- Filtros/Presets Rápidos -->
+    <div class="presets-bar">
+      <button class="btn-preset" onclick="selectPreset('daily')">⭐ Diarias (1, 36, 67, 112)</button>
+      <button class="btn-preset" onclick="selectPreset('juz30')">📜 Juz 'Amma (78-114)</button>
+      <button class="btn-preset" onclick="selectPreset('short')">⚡ Cortas (100-114)</button>
+      <button class="btn-preset" onclick="clearQueue()">✕ Vaciar Selección</button>
+    </div>
+  </header>
+
+  <main class="pill-matrix" id="pillMatrix"></main>
+
+  <div class="player-hud">
+    <div class="hud-info">
+      <div class="hud-title" id="hudTitle">Selecciona capítulos</div>
+      <div class="hud-reciter" id="hudReciter">Mishary Rashid Alafasy</div>
+    </div>
+    <div class="hud-controls">
+      <button class="btn-hud btn-clear" onclick="clearQueue()">VACIAR</button>
+      <button class="btn-hud btn-play" id="playBtn" onclick="togglePlay()">▶</button>
+    </div>
+  </div>
+
+  <script>
+    const surahs = [
+      { id: 1, name: "Al-Fátiha", arabic: "الفاتحة" },
+      { id: 2, name: "Al-Báqara", arabic: "البقرة" },
+      { id: 3, name: "Aal-Imran", arabic: "آل عمران" },
+      { id: 4, name: "An-Nisa", arabic: "النساء" },
+      { id: 5, name: "Al-Ma'ida", arabic: "المائدة" },
+      { id: 6, name: "Al-An'am", arabic: "الأنعام" },
+      { id: 7, name: "Al-A'raf", arabic: "الأعراف" },
+      { id: 8, name: "Al-Anfal", arabic: "الأنفال" },
+      { id: 9, name: "At-Tawbah", arabic: "التوبة" },
+      { id: 10, name: "Yunus", arabic: "يونس" },
+      { id: 11, name: "Hud", arabic: "هود" },
+      { id: 12, name: "Yusuf", arabic: "يوسف" },
+      { id: 13, name: "Ar-Ra'd", arabic: "الرعد" },
+      { id: 14, name: "Ibrahim", arabic: "إبراهيم" },
+      { id: 15, name: "Al-Hijr", arabic: "الحجر" },
+      { id: 16, name: "An-Nahl", arabic: "النحل" },
+      { id: 17, name: "Al-Isra", arabic: "الإسراء" },
+      { id: 18, name: "Al-Kahf", arabic: "الكهف" },
+      { id: 19, name: "Maryam", arabic: "مريم" },
+      { id: 20, name: "Ta-Ha", arabic: "طه" },
+      { id: 21, name: "Al-Anbiya", arabic: "الأنبياء" },
+      { id: 22, name: "Al-Hajj", arabic: "الحج" },
+      { id: 23, name: "Al-Mu'minun", arabic: "المؤمنون" },
+      { id: 24, name: "An-Nur", arabic: "النور" },
+      { id: 25, name: "Al-Furqan", arabic: "الفرقان" },
+      { id: 26, name: "Ash-Shu'ara", arabic: "الشعراء" },
+      { id: 27, name: "An-Naml", arabic: "النمل" },
+      { id: 28, name: "Al-Qasas", arabic: "القصص" },
+      { id: 29, name: "Al-Ankabut", arabic: "العنكبوت" },
+      { id: 30, name: "Ar-Rum", arabic: "الروم" },
+      { id: 31, name: "Luqman", arabic: "لقمان" },
+      { id: 32, name: "As-Sajdah", arabic: "السجدة" },
+      { id: 33, name: "Al-Ahzab", arabic: "الأحزاب" },
+      { id: 34, name: "Saba", arabic: "سبأ" },
+      { id: 35, name: "Fatir", arabic: "فاطر" },
+      { id: 36, name: "Ya-Sin", arabic: "يس" },
+      { id: 37, name: "As-Saffat", arabic: "الصافات" },
+      { id: 38, name: "Sad", arabic: "ص" },
+      { id: 39, name: "Az-Zumar", arabic: "الزمر" },
+      { id: 40, name: "Ghafir", arabic: "غافر" },
+      { id: 41, name: "Fussilat", arabic: "فصلت" },
+      { id: 42, name: "Ash-Shura", arabic: "الشورى" },
+      { id: 43, name: "Az-Zukhruf", arabic: "الزخرف" },
+      { id: 44, name: "Ad-Dukhan", arabic: "الدخان" },
+      { id: 45, name: "Al-Jathiyah", arabic: "الجاثية" },
+      { id: 46, name: "Al-Ahqaf", arabic: "الأحقاف" },
+      { id: 47, name: "Muhammad", arabic: "محمد" },
+      { id: 48, name: "Al-Fath", arabic: "الفتح" },
+      { id: 49, name: "Al-Hujurat", arabic: "الحجرات" },
+      { id: 50, name: "Qaf", arabic: "ق" },
+      { id: 51, name: "Adh-Dhariyat", arabic: "الذاريات" },
+      { id: 52, name: "At-Tur", arabic: "الطور" },
+      { id: 53, name: "An-Najm", arabic: "النجم" },
+      { id: 54, name: "Al-Qamar", arabic: "القمر" },
+      { id: 55, name: "Ar-Rahman", arabic: "الرحمن" },
+      { id: 56, name: "Al-Waqi'ah", arabic: "الواقعة" },
+      { id: 57, name: "Al-Hadid", arabic: "الحديد" },
+      { id: 58, name: "Al-Mujadila", arabic: "المجادلة" },
+      { id: 59, name: "Al-Hashr", arabic: "الحشر" },
+      { id: 60, name: "Al-Mumtahanah", arabic: "الممتحنة" },
+      { id: 61, name: "As-Saff", arabic: "الصف" },
+      { id: 62, name: "Al-Jumu'ah", arabic: "الجمعة" },
+      { id: 63, name: "Al-Munafiqun", arabic: "المنافقون" },
+      { id: 64, name: "At-Taghabun", arabic: "التغابن" },
+      { id: 65, name: "At-Talaq", arabic: "الطلاق" },
+      { id: 66, name: "At-Tahrim", arabic: "التحريم" },
+      { id: 67, name: "Al-Mulk", arabic: "الملك" },
+      { id: 68, name: "Al-Qalam", arabic: "القلم" },
+      { id: 69, name: "Al-Haqqah", arabic: "الحاقة" },
+      { id: 70, name: "Al-Ma'arij", arabic: "المعارج" },
+      { id: 71, name: "Nuh", arabic: "نوح" },
+      { id: 72, name: "Al-Jinn", arabic: "الجن" },
+      { id: 73, name: "Al-Muzzammil", arabic: "المزمل" },
+      { id: 74, name: "Al-Muddaththir", arabic: "المدثر" },
+      { id: 75, name: "Al-Qiyamah", arabic: "القيامة" },
+      { id: 76, name: "Al-Insan", arabic: "الإنسان" },
+      { id: 77, name: "Al-Mursalat", arabic: "المرسلات" },
+      { id: 78, name: "An-Naba", arabic: "النبأ" },
+      { id: 79, name: "An-Nazi'at", arabic: "النازعات" },
+      { id: 80, name: "Abasa", arabic: "عبس" },
+      { id: 81, name: "At-Takwir", arabic: "التكوير" },
+      { id: 82, name: "Al-Infitar", arabic: "الانفطار" },
+      { id: 83, name: "Al-Mutaffifin", arabic: "المطففين" },
+      { id: 84, name: "Al-Inshiqaq", arabic: "الانشقاق" },
+      { id: 85, name: "Al-Buruj", arabic: "البروج" },
+      { id: 86, name: "At-Tariq", arabic: "الطارق" },
+      { id: 87, name: "Al-A'la", arabic: "الأعلى" },
+      { id: 88, name: "Al-Ghashiyah", arabic: "الغاشية" },
+      { id: 89, name: "Al-Fajr", arabic: "الفجر" },
+      { id: 90, name: "Al-Balad", arabic: "البلد" },
+      { id: 91, name: "Ash-Shams", arabic: "الشمس" },
+      { id: 92, name: "Al-Layl", arabic: "الليل" },
+      { id: 93, name: "Ad-Duha", arabic: "الضحى" },
+      { id: 94, name: "Ash-Sharh", arabic: "الشرح" },
+      { id: 95, name: "At-Tin", arabic: "التين" },
+      { id: 96, name: "Al-Alaq", arabic: "العلق" },
+      { id: 97, name: "Al-Qadr", arabic: "القدر" },
+      { id: 98, name: "Al-Bayyinah", arabic: "البينة" },
+      { id: 99, name: "Az-Zalzalah", arabic: "الزلزلة" },
+      { id: 100, name: "Al-Adiyat", arabic: "العاديات" },
+      { id: 101, name: "Al-Qari'ah", arabic: "القارعة" },
+      { id: 102, name: "At-Takathur", arabic: "التكاثر" },
+      { id: 103, name: "Al-Asr", arabic: "العصر" },
+      { id: 104, name: "Al-Humazah", arabic: "الهمزة" },
+      { id: 105, name: "Al-Fil", arabic: "الفيل" },
+      { id: 106, name: "Quraysh", arabic: "قريش" },
+      { id: 107, name: "Al-Ma'un", arabic: "الماعون" },
+      { id: 108, name: "Al-Kawthar", arabic: "الكوثر" },
+      { id: 109, name: "Al-Kafirun", arabic: "الكافرون" },
+      { id: 110, name: "An-Nasr", arabic: "النصر" },
+      { id: 111, name: "Al-Masad", arabic: "المسد" },
+      { id: 112, name: "Al-Ikhlas", arabic: "الإخلاص" },
+      { id: 113, name: "Al-Falaq", arabic: "الفلق" },
+      { id: 114, name: "An-Nas", arabic: "الناس" }
+    ];
+
+    let queue = new Set();
+    let isPlaying = false;
+
+    function renderMatrix(filter = "") {
+      const container = document.getElementById('pillMatrix');
+      container.innerHTML = "";
+      const frag = document.createDocumentFragment();
+
+      const filtered = surahs.filter(s => 
+        s.name.toLowerCase().includes(filter.toLowerCase()) || 
+        s.id.toString() === filter.trim()
+      );
+
+      filtered.forEach(s => {
+        const isSelected = queue.has(s.id);
+        const pill = document.createElement('div');
+        pill.className = `pill ${isSelected ? 'selected' : ''}`;
+        pill.id = `pill-${s.id}`;
+        pill.onclick = () => toggleSurah(s.id, s.name);
+
+        pill.innerHTML = `
+          <div class="pill-left">
+            <span class="pill-num">#${s.id}</span>
+            <span class="pill-name">${s.name}</span>
+          </div>
+          <span class="pill-arabic">${s.arabic}</span>
+        `;
+        frag.appendChild(pill);
+      });
+
+      container.appendChild(frag);
+    }
+
+    function toggleSurah(id, name) {
+      const pill = document.getElementById(`pill-${id}`);
+      if (queue.has(id)) {
+        queue.delete(id);
+      } else {
+        queue.add(id);
+        document.getElementById('hudTitle').innerText = `${id}. ${name}`;
+      }
+      if (pill) pill.classList.toggle('selected');
+      updateUI();
+    }
+
+    function selectPreset(type) {
+      queue.clear();
+      if (type === 'daily') [1, 36, 67, 112].forEach(id => queue.add(id));
+      if (type === 'juz30') { for (let i = 78; i <= 114; i++) queue.add(i); }
+      if (type === 'short') { for (let i = 100; i <= 114; i++) queue.add(i); }
+      
+      renderMatrix();
+      updateUI();
+    }
+
+    function updateUI() {
+      document.getElementById('selectedBadge').innerText = queue.size;
+      if (queue.size === 0) {
+        document.getElementById('hudTitle').innerText = 'Selecciona capítulos';
+      }
+    }
+
+    function updateReciter(name) {
+      document.getElementById('hudReciter').innerText = name;
+    }
+
+    function clearQueue() {
+      queue.clear();
+      document.querySelectorAll('.pill.selected').forEach(p => p.classList.remove('selected'));
+      updateUI();
+    }
+
+    function togglePlay() {
+      isPlaying = !isPlaying;
+      document.getElementById('playBtn').innerText = isPlaying ? '❚❚' : '▶';
+    }
+
+    renderMatrix();
+  </script>
+</body>
+</html>
