@@ -44,4 +44,14 @@ abstract class AppColors {
   static const Color meccanDark = Color(0xFF1E3328);
   static const Color medinanLight = Color(0xFFE8DED0);
   static const Color medinanDark = Color(0xFF332A1E);
+
+  // --- Mosaic view ---
+  static const Color mosaicTileLight = Color(0xFFE8E4DA);
+  static const Color mosaicTileDark = Color(0xFF111827);
+  static const Color mosaicBgLight = Color(0xFFF0EDE5);
+  static const Color mosaicBgDark = Color(0xFF030712);
+  static const Color mosaicActive = Color(0xFF059669);
+  static const Color mosaicActiveEnd = Color(0xFF047857);
+  static const Color mosaicActiveGlow = Color(0xFF10b981);
+  static const Color mosaicActiveMuted = Color(0xFFa7f3d0);
 }

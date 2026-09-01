@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 import '../../core/data/mock_data.dart';
 import '../../core/constants/app_colors.dart';
 import '../../shared/providers/playlist_provider.dart';
+import '../../shared/providers/view_mode_provider.dart';
 import '../../shared/widgets/surah_tile.dart';
+import '../../shared/widgets/mosaic_grid_view.dart';
 import '../../shared/widgets/reciter_selector_sheet.dart';
 
 class SurahListScreen extends StatefulWidget {
@@ -29,7 +31,9 @@ class _SurahListScreenState extends State<SurahListScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final playlist = context.watch<PlaylistProvider>();
+    final viewMode = context.watch<ViewModeProvider>();
     final surahs = MockData.surahs;
+    final isMosaic = viewMode.mode == ViewMode.mosaic;
 
     final filtered = _query.isEmpty
         ? surahs
@@ -42,12 +46,18 @@ class _SurahListScreenState extends State<SurahListScreen> {
           }).toList();
 
     return Scaffold(
+      backgroundColor: isMosaic
+          ? (isDark ? AppColors.mosaicBgDark : null)
+          : null,
       body: CustomScrollView(
         slivers: [
           // --- App Bar ---
           SliverAppBar(
             floating: true,
             snap: true,
+            backgroundColor: isMosaic && isDark
+                ? AppColors.mosaicBgDark.withValues(alpha: 0.9)
+                : null,
             title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -61,6 +71,28 @@ class _SurahListScreenState extends State<SurahListScreen> {
                 ),
               ],
             ),
+            actions: [
+              // --- View mode toggle ---
+              IconButton(
+                icon: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  transitionBuilder: (child, animation) => ScaleTransition(
+                    scale: animation,
+                    child: child,
+                  ),
+                  child: Icon(
+                    isMosaic
+                        ? Icons.view_list_rounded
+                        : Icons.grid_view_rounded,
+                    key: ValueKey(isMosaic),
+                    size: 22,
+                  ),
+                ),
+                tooltip: isMosaic ? 'Switch to list view' : 'Switch to mosaic view',
+                onPressed: viewMode.toggle,
+              ),
+              const SizedBox(width: 4),
+            ],
           ),
 
           // --- Reciter selector card ---
@@ -120,29 +152,32 @@ class _SurahListScreenState extends State<SurahListScreen> {
             ),
           ),
 
-          // --- List ---
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final surah = filtered[index];
-                return Column(
-                  children: [
-                    SurahTile(surah: surah),
-                    if (index < filtered.length - 1)
-                      Divider(
-                        indent: 70,
-                        endIndent: 16,
-                        height: 1,
-                        color: isDark
-                            ? AppColors.outlineDark
-                            : AppColors.outlineLight,
-                      ),
-                  ],
-                );
-              },
-              childCount: filtered.length,
+          // --- List or Mosaic view ---
+          if (isMosaic)
+            MosaicGridView(surahs: filtered)
+          else
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final surah = filtered[index];
+                  return Column(
+                    children: [
+                      SurahTile(surah: surah),
+                      if (index < filtered.length - 1)
+                        Divider(
+                          indent: 70,
+                          endIndent: 16,
+                          height: 1,
+                          color: isDark
+                              ? AppColors.outlineDark
+                              : AppColors.outlineLight,
+                        ),
+                    ],
+                  );
+                },
+                childCount: filtered.length,
+              ),
             ),
-          ),
 
           // Bottom padding so mini-player doesn't hide last item
           const SliverToBoxAdapter(child: SizedBox(height: 80)),

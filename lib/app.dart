@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
 import 'shared/providers/playlist_provider.dart';
 import 'shared/providers/player_provider.dart';
+import 'shared/providers/view_mode_provider.dart';
 import 'features/surah_list/surah_list_screen.dart';
 import 'features/playlist/playlist_screen.dart';
 import 'features/player/player_screen.dart';
@@ -41,6 +42,7 @@ class QuranPlayerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => ViewModeProvider()),
         ChangeNotifierProvider(create: (_) => PlaylistProvider()),
         ChangeNotifierProxyProvider<PlaylistProvider, PlayerProvider>(
           create: (_) => PlayerProvider(),
