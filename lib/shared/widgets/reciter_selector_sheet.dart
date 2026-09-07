@@ -4,6 +4,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/models/reciter.dart';
 import '../providers/playlist_provider.dart';
 import '../providers/player_provider.dart';
+import '../utils/app_snackbar.dart';
 
 void showReciterSelectorModal(BuildContext context) {
   showModalBottomSheet(
@@ -242,12 +243,9 @@ class _ReciterSelectorSheetState extends State<ReciterSelectorSheet> {
                                       final success =
                                           await playlist.togglePinReciter(reciter.id);
                                       if (!success && context.mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                                'You can pin a maximum of 3 reciters'),
-                                            duration: Duration(seconds: 2),
-                                          ),
+                                        showAppSnackBar(
+                                          context,
+                                          'You can pin a maximum of 3 reciters',
                                         );
                                       }
                                     },

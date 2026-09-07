@@ -9,6 +9,7 @@ import '../../shared/providers/view_mode_provider.dart';
 import '../../shared/widgets/surah_tile.dart';
 import '../../shared/widgets/mosaic_grid_view.dart';
 import '../../shared/widgets/reciter_selector_sheet.dart';
+import '../../shared/utils/app_snackbar.dart';
 
 class SurahListScreen extends StatefulWidget {
   const SurahListScreen({super.key});
@@ -182,12 +183,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
           ? FloatingActionButton.extended(
               onPressed: () {
                 playlist.addAllSurahs();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('All 114 surahs added to playlist'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
+                showAppSnackBar(context, 'All 114 surahs added to playlist');
               },
               icon: const Icon(Icons.playlist_add_rounded),
               label: const Text('Add all'),

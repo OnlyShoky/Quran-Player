@@ -6,6 +6,7 @@ import '../../core/constants/app_colors.dart';
 import '../../shared/providers/playlist_provider.dart';
 import '../../shared/providers/player_provider.dart';
 import '../../shared/widgets/reciter_selector_sheet.dart';
+import '../../shared/utils/app_snackbar.dart';
 
 class PlaylistScreen extends StatelessWidget {
   const PlaylistScreen({super.key});
@@ -113,15 +114,13 @@ class PlaylistScreen extends StatelessWidget {
                       final idx = playlist.indexOfSurah(surah.id);
                       final removed = playlist.removeSurah(surah.id);
                       if (removed != null && context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('${surah.nameEn} removed'),
-                            action: SnackBarAction(
-                              label: 'Undo',
-                              onPressed: () =>
-                                  playlist.undoRemove(removed, idx),
-                            ),
-                            duration: const Duration(seconds: 4),
+                        showAppSnackBar(
+                          context,
+                          '${surah.nameEn} removed',
+                          action: SnackBarAction(
+                            label: 'Undo',
+                            onPressed: () =>
+                                playlist.undoRemove(removed, idx),
                           ),
                         );
                       }

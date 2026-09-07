@@ -106,6 +106,8 @@ abstract class AppTheme {
         backgroundColor: isDark ? const Color(0xFF3A3A34) : const Color(0xFF2C2C28),
         contentTextStyle: GoogleFonts.lato(color: Colors.white, fontSize: 14),
         actionTextColor: isDark ? AppColors.primaryDark : const Color(0xFF9FCFC0),
+        showCloseIcon: true,
+        closeIconColor: Colors.white,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),

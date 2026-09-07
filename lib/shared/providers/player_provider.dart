@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:audio_session/audio_session.dart';
 import '../../core/models/surah.dart';
 import '../../core/models/reciter.dart';
 import 'playlist_provider.dart';
@@ -24,6 +25,7 @@ class PlayerProvider extends ChangeNotifier {
   StreamSubscription? _playerStateSub;
   StreamSubscription? _positionSub;
   StreamSubscription? _durationSub;
+  StreamSubscription? _becomingNoisySub;
 
   PlaylistProvider? _playlistProvider;
 
@@ -39,7 +41,20 @@ class PlayerProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   PlayerProvider() {
+    _initAudioSession();
     _initAudioListeners();
+  }
+
+  Future<void> _initAudioSession() async {
+    try {
+      final session = await AudioSession.instance;
+      await session.configure(const AudioSessionConfiguration.music());
+      _becomingNoisySub = session.becomingNoisyEventStream.listen((_) {
+        pause();
+      });
+    } catch (e) {
+      debugPrint('AudioSession init error: $e');
+    }
   }
 
   void updatePlaylistProvider(PlaylistProvider playlistProvider) {
@@ -230,6 +245,7 @@ class PlayerProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _becomingNoisySub?.cancel();
     _playerStateSub?.cancel();
     _positionSub?.cancel();
     _durationSub?.cancel();

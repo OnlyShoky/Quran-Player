@@ -6,6 +6,7 @@ import '../../core/models/surah.dart';
 import '../../core/constants/app_colors.dart';
 import '../providers/playlist_provider.dart';
 import '../providers/player_provider.dart';
+import '../utils/app_snackbar.dart';
 
 /// A single row in the surah list.
 class SurahTile extends StatelessWidget {
@@ -19,9 +20,7 @@ class SurahTile extends StatelessWidget {
 
     final reciter = playlist.selectedReciter;
     if (reciter == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a reciter first')),
-      );
+      showAppSnackBar(context, 'Please select a reciter first');
       return;
     }
 
@@ -168,15 +167,13 @@ class SurahTile extends StatelessWidget {
                         final index = playlist.indexOfSurah(surah.id);
                         final removed = playlist.removeSurah(surah.id);
                         if (removed != null && context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('${surah.nameEn} removed'),
-                              action: SnackBarAction(
-                                label: 'Undo',
-                                onPressed: () =>
-                                    playlist.undoRemove(removed, index),
-                              ),
-                              duration: const Duration(seconds: 3),
+                          showAppSnackBar(
+                            context,
+                            '${surah.nameEn} removed',
+                            action: SnackBarAction(
+                              label: 'Undo',
+                              onPressed: () =>
+                                  playlist.undoRemove(removed, index),
                             ),
                           );
                         }
