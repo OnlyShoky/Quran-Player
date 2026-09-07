@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/models/playlist_item.dart';
 import '../../core/models/surah.dart';
 import '../../core/models/reciter.dart';
@@ -7,11 +8,17 @@ import '../../core/services/api_service.dart';
 
 /// Manages the user's playlist and fetches reciters.
 class PlaylistProvider extends ChangeNotifier {
+  static const String _favPrefKey = 'favorite_reciter_ids';
+  static const String _pinPrefKey = 'pinned_reciter_ids';
+
   final ApiService _apiService = ApiService();
 
   List<Reciter> _reciters = [];
   bool _isLoadingReciters = true;
   int? _selectedReciterId;
+
+  Set<int> _favoriteReciterIds = {};
+  List<int> _pinnedReciterIds = [];
 
   final List<PlaylistItem> _items = [];
 
@@ -19,6 +26,23 @@ class PlaylistProvider extends ChangeNotifier {
   bool get isLoadingReciters => _isLoadingReciters;
   int? get selectedReciterId => _selectedReciterId;
   List<PlaylistItem> get items => List.unmodifiable(_items);
+
+  Set<int> get favoriteReciterIds => Set.unmodifiable(_favoriteReciterIds);
+  List<int> get pinnedReciterIds => List.unmodifiable(_pinnedReciterIds);
+
+  List<Reciter> get pinnedReciters {
+    final list = <Reciter>[];
+    for (final id in _pinnedReciterIds) {
+      try {
+        final r = _reciters.firstWhere((element) => element.id == id);
+        list.add(r);
+      } catch (_) {}
+    }
+    return list;
+  }
+
+  bool isFavorite(int reciterId) => _favoriteReciterIds.contains(reciterId);
+  bool isPinned(int reciterId) => _pinnedReciterIds.contains(reciterId);
 
   Reciter? get selectedReciter {
     if (_selectedReciterId == null || _reciters.isEmpty) return null;
@@ -30,7 +54,68 @@ class PlaylistProvider extends ChangeNotifier {
   }
 
   PlaylistProvider() {
+    _loadPreferences();
     _fetchReciters();
+  }
+
+  Future<void> _loadPreferences() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final favList = prefs.getStringList(_favPrefKey) ?? [];
+      final pinList = prefs.getStringList(_pinPrefKey) ?? [];
+
+      _favoriteReciterIds = favList
+          .map((e) => int.tryParse(e))
+          .whereType<int>()
+          .toSet();
+
+      _pinnedReciterIds = pinList
+          .map((e) => int.tryParse(e))
+          .whereType<int>()
+          .take(3)
+          .toList();
+
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  Future<void> toggleFavoriteReciter(int reciterId) async {
+    if (_favoriteReciterIds.contains(reciterId)) {
+      _favoriteReciterIds.remove(reciterId);
+    } else {
+      _favoriteReciterIds.add(reciterId);
+    }
+    notifyListeners();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(
+        _favPrefKey,
+        _favoriteReciterIds.map((id) => id.toString()).toList(),
+      );
+    } catch (_) {}
+  }
+
+  Future<bool> togglePinReciter(int reciterId) async {
+    if (_pinnedReciterIds.contains(reciterId)) {
+      _pinnedReciterIds.remove(reciterId);
+    } else {
+      if (_pinnedReciterIds.length >= 3) {
+        return false; // Reached limit of 3
+      }
+      _pinnedReciterIds.add(reciterId);
+    }
+    notifyListeners();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(
+        _pinPrefKey,
+        _pinnedReciterIds.map((id) => id.toString()).toList(),
+      );
+    } catch (_) {}
+
+    return true;
   }
 
   Future<void> _fetchReciters() async {
@@ -39,7 +124,7 @@ class PlaylistProvider extends ChangeNotifier {
 
     _reciters = await _apiService.fetchReciters();
 
-    if (_reciters.isNotEmpty) {
+    if (_reciters.isNotEmpty && _selectedReciterId == null) {
       _selectedReciterId = _reciters.first.id;
     }
 

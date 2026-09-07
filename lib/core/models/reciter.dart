@@ -12,6 +12,25 @@ class Reciter {
     required this.serverUrl,
   });
 
+  String get shortName {
+    final clean = name.replaceAll(RegExp(r'^(Dr\.|Sheikh|Shaykh)\s+', caseSensitive: false), '').trim();
+    final parts = clean.split(' ');
+    if (parts.isEmpty) return name;
+    if (parts.length == 1) return parts[0];
+    if ((parts[0].toLowerCase() == 'abdul' || parts[0].toLowerCase() == 'abdel' || parts[0].toLowerCase() == 'abu') && parts.length > 1) {
+      return '${parts[0]} ${parts[1]}';
+    }
+    return parts[0];
+  }
+
+  String get initials {
+    final clean = name.replaceAll(RegExp(r'^(Dr\.|Sheikh|Shaykh)\s+', caseSensitive: false), '').trim();
+    final parts = clean.split(RegExp(r'[\s\-]+'));
+    if (parts.isEmpty) return 'R';
+    if (parts.length == 1) return parts[0].substring(0, 1).toUpperCase();
+    return '${parts[0][0]}${parts[parts.length - 1][0]}'.toUpperCase();
+  }
+
   factory Reciter.fromJson(Map<String, dynamic> json) {
     String serverUrl = '';
     String style = '';

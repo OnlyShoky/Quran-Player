@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/models/reciter.dart';
 import '../providers/playlist_provider.dart';
 import '../providers/player_provider.dart';
 
@@ -47,6 +48,16 @@ class _ReciterSelectorSheetState extends State<ReciterSelectorSheet> {
             return r.name.toLowerCase().contains(q) ||
                 r.style.toLowerCase().contains(q);
           }).toList();
+
+    // Sort so favorited reciters appear at the top
+    final sortedReciters = List<Reciter>.from(filteredReciters)
+      ..sort((a, b) {
+        final aFav = playlist.isFavorite(a.id);
+        final bFav = playlist.isFavorite(b.id);
+        if (aFav && !bFav) return -1;
+        if (!aFav && bFav) return 1;
+        return 0;
+      });
 
     return DraggableScrollableSheet(
       initialChildSize: 0.75,
@@ -127,7 +138,7 @@ class _ReciterSelectorSheetState extends State<ReciterSelectorSheet> {
             Expanded(
               child: playlist.isLoadingReciters
                   ? const Center(child: CircularProgressIndicator())
-                  : filteredReciters.isEmpty
+                  : sortedReciters.isEmpty
                       ? Center(
                           child: Text(
                             'No reciters found',
@@ -140,7 +151,7 @@ class _ReciterSelectorSheetState extends State<ReciterSelectorSheet> {
                         )
                       : ListView.separated(
                           controller: scrollController,
-                          itemCount: filteredReciters.length,
+                          itemCount: sortedReciters.length,
                           separatorBuilder: (context, i) => Divider(
                             height: 1,
                             indent: 16,
@@ -150,25 +161,33 @@ class _ReciterSelectorSheetState extends State<ReciterSelectorSheet> {
                                 : AppColors.outlineLight,
                           ),
                           itemBuilder: (context, index) {
-                            final reciter = filteredReciters[index];
+                            final reciter = sortedReciters[index];
                             final isSelected =
                                 playlist.selectedReciterId == reciter.id;
+                            final isFav = playlist.isFavorite(reciter.id);
+                            final isPin = playlist.isPinned(reciter.id);
 
                             return ListTile(
                               contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 20,
+                                horizontal: 16,
                                 vertical: 2,
                               ),
-                              title: Text(
-                                reciter.name,
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  color: isSelected
-                                      ? theme.colorScheme.primary
-                                      : null,
-                                  fontWeight: isSelected
-                                      ? FontWeight.w700
-                                      : FontWeight.w500,
-                                ),
+                              title: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      reciter.name,
+                                      style: theme.textTheme.titleMedium?.copyWith(
+                                        color: isSelected
+                                            ? theme.colorScheme.primary
+                                            : null,
+                                        fontWeight: isSelected
+                                            ? FontWeight.w700
+                                            : FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                               subtitle: reciter.style.isNotEmpty
                                   ? Text(
@@ -180,15 +199,72 @@ class _ReciterSelectorSheetState extends State<ReciterSelectorSheet> {
                                       ),
                                     )
                                   : null,
-                              trailing: isSelected
-                                  ? Icon(
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // Favorite Button
+                                  IconButton(
+                                    icon: Icon(
+                                      isFav
+                                          ? Icons.favorite_rounded
+                                          : Icons.favorite_outline_rounded,
+                                      size: 20,
+                                      color: isFav
+                                          ? Colors.redAccent
+                                          : (isDark
+                                              ? AppColors.mutedDark
+                                              : AppColors.mutedLight),
+                                    ),
+                                    tooltip: isFav
+                                        ? 'Remove from favorites'
+                                        : 'Add to favorites',
+                                    onPressed: () {
+                                      playlist.toggleFavoriteReciter(reciter.id);
+                                    },
+                                  ),
+                                  // Pin Button
+                                  IconButton(
+                                    icon: Icon(
+                                      isPin
+                                          ? Icons.push_pin_rounded
+                                          : Icons.push_pin_outlined,
+                                      size: 20,
+                                      color: isPin
+                                          ? theme.colorScheme.primary
+                                          : (isDark
+                                              ? AppColors.mutedDark
+                                              : AppColors.mutedLight),
+                                    ),
+                                    tooltip: isPin
+                                        ? 'Unpin reciter'
+                                        : 'Pin reciter (max 3)',
+                                    onPressed: () async {
+                                      final success =
+                                          await playlist.togglePinReciter(reciter.id);
+                                      if (!success && context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                                'You can pin a maximum of 3 reciters'),
+                                            duration: Duration(seconds: 2),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                  if (isSelected) ...[
+                                    const SizedBox(width: 2),
+                                    Icon(
                                       Icons.check_circle_rounded,
                                       color: theme.colorScheme.primary,
-                                    )
-                                  : null,
+                                      size: 20,
+                                    ),
+                                  ],
+                                ],
+                              ),
                               onTap: () {
                                 playlist.selectReciter(reciter.id);
-                                
+
                                 // If player is currently playing a surah, reload with new reciter
                                 if (player.currentSurah != null) {
                                   player.loadAndPlay(
