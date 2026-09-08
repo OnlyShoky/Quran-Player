@@ -9,6 +9,7 @@ import '../../shared/providers/view_mode_provider.dart';
 import '../../shared/widgets/surah_tile.dart';
 import '../../shared/widgets/mosaic_grid_view.dart';
 import '../../shared/widgets/reciter_selector_sheet.dart';
+import '../../shared/widgets/view_mode_tutorial_overlay.dart';
 import '../../shared/utils/app_snackbar.dart';
 
 class SurahListScreen extends StatefulWidget {
@@ -20,12 +21,67 @@ class SurahListScreen extends StatefulWidget {
 
 class _SurahListScreenState extends State<SurahListScreen> {
   final _searchController = TextEditingController();
+  final GlobalKey _viewModeButtonKey = GlobalKey();
+  OverlayEntry? _tutorialOverlayEntry;
+  bool _tutorialScheduled = false;
   String _query = '';
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkAndShowTutorial());
+  }
+
+  @override
   void dispose() {
+    _removeTutorialOverlay();
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _removeTutorialOverlay() {
+    _tutorialOverlayEntry?.remove();
+    _tutorialOverlayEntry = null;
+  }
+
+  void _checkAndShowTutorial() {
+    if (!mounted || _tutorialOverlayEntry != null) return;
+    final viewMode = context.read<ViewModeProvider>();
+    if (!viewMode.shouldShowTutorial) return;
+
+    final renderBox =
+        _viewModeButtonKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null || !renderBox.hasSize) {
+      if (!_tutorialScheduled) {
+        _tutorialScheduled = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _tutorialScheduled = false;
+          _checkAndShowTutorial();
+        });
+      }
+      return;
+    }
+
+    final targetOffset = renderBox.localToGlobal(Offset.zero);
+    final targetRect = targetOffset & renderBox.size;
+
+    _tutorialOverlayEntry = OverlayEntry(
+      builder: (ctx) => ViewModeTutorialOverlay(
+        targetRect: targetRect,
+        isMosaic: viewMode.mode == ViewMode.mosaic,
+        onDismiss: () {
+          _removeTutorialOverlay();
+          viewMode.completeTutorial();
+        },
+        onToggleMode: () {
+          _removeTutorialOverlay();
+          viewMode.toggle();
+          viewMode.completeTutorial();
+        },
+      ),
+    );
+
+    Overlay.of(context, rootOverlay: true).insert(_tutorialOverlayEntry!);
   }
 
   @override
@@ -36,6 +92,16 @@ class _SurahListScreenState extends State<SurahListScreen> {
     final viewMode = context.watch<ViewModeProvider>();
     final surahs = MockData.surahs;
     final isMosaic = viewMode.mode == ViewMode.mosaic;
+
+    if (viewMode.shouldShowTutorial &&
+        _tutorialOverlayEntry == null &&
+        !_tutorialScheduled) {
+      _tutorialScheduled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _tutorialScheduled = false;
+        _checkAndShowTutorial();
+      });
+    }
 
     final filtered = _query.isEmpty
         ? surahs
@@ -70,6 +136,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
             actions: [
               // --- View mode toggle ---
               IconButton(
+                key: _viewModeButtonKey,
                 icon: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 200),
                   transitionBuilder: (child, animation) => ScaleTransition(
