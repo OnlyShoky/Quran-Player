@@ -5,6 +5,7 @@ import 'package:audio_session/audio_session.dart';
 import '../../core/models/surah.dart';
 import '../../core/models/reciter.dart';
 import 'playlist_provider.dart';
+import 'settings_provider.dart';
 
 enum PlaybackState { stopped, playing, paused, buffering }
 
@@ -28,6 +29,10 @@ class PlayerProvider extends ChangeNotifier {
   StreamSubscription? _becomingNoisySub;
 
   PlaylistProvider? _playlistProvider;
+  SettingsProvider? _settingsProvider;
+
+  bool _isDismissed = false;
+  int _lastKnownPlaylistLength = 0;
 
   PlaybackState get state => _state;
   int get currentIndex => _currentIndex;
@@ -36,8 +41,20 @@ class PlayerProvider extends ChangeNotifier {
   Duration get duration => _duration;
   bool get isPlaying => _state == PlaybackState.playing;
   bool get isBuffering => _state == PlaybackState.buffering;
-  Surah? get currentSurah => _currentSurah;
-  Reciter? get currentReciter => _currentReciter;
+  bool get isDismissed => _isDismissed;
+
+  Surah? get currentSurah {
+    if (_currentSurah != null) return _currentSurah;
+    if (_playlistProvider != null && _playlistProvider!.items.isNotEmpty) {
+      final safeIndex = _currentIndex.clamp(0, _playlistProvider!.items.length - 1);
+      return _playlistProvider!.surahById(_playlistProvider!.items[safeIndex].surahId);
+    }
+    return null;
+  }
+
+  Reciter? get currentReciter =>
+      _currentReciter ?? _playlistProvider?.selectedReciter;
+
   String? get errorMessage => _errorMessage;
 
   PlayerProvider() {
@@ -62,9 +79,19 @@ class PlayerProvider extends ChangeNotifier {
     _syncWithPlaylist();
   }
 
+  void updateSettingsProvider(SettingsProvider settingsProvider) {
+    _settingsProvider = settingsProvider;
+  }
+
   void _syncWithPlaylist() {
     if (_playlistProvider == null) return;
     final items = _playlistProvider!.items;
+
+    // If new items were added to the playlist, un-dismiss so the bar is ready
+    if (items.length > _lastKnownPlaylistLength) {
+      _isDismissed = false;
+    }
+    _lastKnownPlaylistLength = items.length;
 
     if (items.isEmpty) {
       if (_currentSurah != null || _state != PlaybackState.stopped) {
@@ -75,6 +102,7 @@ class PlayerProvider extends ChangeNotifier {
         _currentIndex = 0;
         _position = Duration.zero;
         _progress = 0.0;
+        _isDismissed = true;
         notifyListeners();
       }
       return;
@@ -95,6 +123,11 @@ class PlayerProvider extends ChangeNotifier {
         _progress = 0.0;
         notifyListeners();
       }
+    } else {
+      if (_currentIndex >= items.length) {
+        _currentIndex = 0;
+      }
+      notifyListeners();
     }
   }
 
@@ -139,10 +172,28 @@ class PlayerProvider extends ChangeNotifier {
   }
 
   void _onTrackCompleted() {
-    if (_playlistProvider != null && _playlistProvider!.items.isNotEmpty) {
-      if (_currentIndex < _playlistProvider!.items.length - 1) {
-        playIndex(_currentIndex + 1);
-      }
+    final completionAction =
+        _settingsProvider?.playbackCompletion ?? PlaybackCompletionAction.next;
+
+    switch (completionAction) {
+      case PlaybackCompletionAction.repeat:
+        if (_currentSurah != null && _currentReciter != null) {
+          loadAndPlay(
+            surah: _currentSurah!,
+            reciter: _currentReciter!,
+            index: _currentIndex,
+          );
+        }
+        break;
+      case PlaybackCompletionAction.stop:
+        break;
+      case PlaybackCompletionAction.next:
+        if (_playlistProvider != null && _playlistProvider!.items.isNotEmpty) {
+          if (_currentIndex < _playlistProvider!.items.length - 1) {
+            playIndex(_currentIndex + 1);
+          }
+        }
+        break;
     }
   }
 
@@ -161,6 +212,7 @@ class PlayerProvider extends ChangeNotifier {
     required Reciter reciter,
     required int index,
   }) async {
+    _isDismissed = false;
     _currentIndex = index;
     _currentSurah = surah;
     _currentReciter = reciter;
@@ -188,6 +240,7 @@ class PlayerProvider extends ChangeNotifier {
   }
 
   Future<void> playIndex(int index) async {
+    _isDismissed = false;
     if (_playlistProvider == null || _playlistProvider!.items.isEmpty) return;
     if (index < 0 || index >= _playlistProvider!.items.length) return;
 
@@ -201,10 +254,11 @@ class PlayerProvider extends ChangeNotifier {
   }
 
   void play() {
+    _isDismissed = false;
     if (_currentAudioUrl != null) {
       _audioPlayer.play();
     } else if (_playlistProvider != null && _playlistProvider!.items.isNotEmpty) {
-      playIndex(0);
+      playIndex(_currentIndex);
     }
   }
 
@@ -212,7 +266,21 @@ class PlayerProvider extends ChangeNotifier {
     _audioPlayer.pause();
   }
 
+  void stop() {
+    _audioPlayer.stop();
+    _audioPlayer.seek(Duration.zero);
+    _state = PlaybackState.stopped;
+    _currentSurah = null;
+    _currentReciter = null;
+    _currentAudioUrl = null;
+    _isDismissed = true;
+    _position = Duration.zero;
+    _progress = 0.0;
+    notifyListeners();
+  }
+
   void togglePlayPause() {
+    _isDismissed = false;
     if (isPlaying) {
       pause();
     } else if (_state == PlaybackState.paused) {

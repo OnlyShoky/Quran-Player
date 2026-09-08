@@ -38,6 +38,13 @@ class ViewModeProvider extends ChangeNotifier {
     _save();
   }
 
+  void setMode(ViewMode newMode) {
+    if (_mode == newMode) return;
+    _mode = newMode;
+    notifyListeners();
+    _save();
+  }
+
   Future<void> completeTutorial() async {
     if (_hasSeenTutorial) return;
     _hasSeenTutorial = true;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../core/models/reciter.dart';
 import '../providers/playlist_provider.dart';
 import '../providers/player_provider.dart';
@@ -88,7 +89,7 @@ class _ReciterSelectorSheetState extends State<ReciterSelectorSheet> {
                   Icon(Icons.mic_rounded, color: theme.colorScheme.primary),
                   const SizedBox(width: 10),
                   Text(
-                    'Select Reciter',
+                    context.tr('select_reciter'),
                     style: theme.textTheme.titleLarge,
                   ),
                   const Spacer(),
@@ -109,7 +110,7 @@ class _ReciterSelectorSheetState extends State<ReciterSelectorSheet> {
                 controller: _searchController,
                 onChanged: (v) => setState(() => _searchQuery = v.trim()),
                 decoration: InputDecoration(
-                  hintText: 'Search reciters...',
+                  hintText: context.tr('search_reciter'),
                   prefixIcon: const Icon(Icons.search_rounded),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
@@ -243,10 +244,10 @@ class _ReciterSelectorSheetState extends State<ReciterSelectorSheet> {
                                       final success =
                                           await playlist.togglePinReciter(reciter.id);
                                       if (!success && context.mounted) {
-                                        showAppSnackBar(
-                                          context,
-                                          'You can pin a maximum of 3 reciters',
-                                        );
+                                         showAppSnackBar(
+                                           context,
+                                           context.tr('max_pins_reached'),
+                                         );
                                       }
                                     },
                                   ),

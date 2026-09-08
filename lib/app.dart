@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
+import 'core/localization/app_localizations.dart';
 import 'shared/providers/playlist_provider.dart';
 import 'shared/providers/player_provider.dart';
 import 'shared/providers/view_mode_provider.dart';
+import 'shared/providers/settings_provider.dart';
 import 'features/surah_list/surah_list_screen.dart';
 import 'features/playlist/playlist_screen.dart';
 import 'features/player/player_screen.dart';
+import 'features/settings/settings_screen.dart';
 import 'shared/widgets/mini_player.dart';
 
 class QuranPlayerApp extends StatelessWidget {
@@ -35,6 +39,10 @@ class QuranPlayerApp extends StatelessWidget {
         path: '/player',
         builder: (ctx, state) => const PlayerScreen(),
       ),
+      GoRoute(
+        path: '/settings',
+        builder: (ctx, state) => const SettingsScreen(),
+      ),
     ],
   );
 
@@ -42,23 +50,35 @@ class QuranPlayerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ChangeNotifierProvider(create: (_) => ViewModeProvider()),
         ChangeNotifierProvider(create: (_) => PlaylistProvider()),
-        ChangeNotifierProxyProvider<PlaylistProvider, PlayerProvider>(
+        ChangeNotifierProxyProvider2<PlaylistProvider, SettingsProvider, PlayerProvider>(
           create: (_) => PlayerProvider(),
-          update: (_, playlist, player) {
+          update: (_, playlist, settings, player) {
             player!.updatePlaylistProvider(playlist);
+            player.updateSettingsProvider(settings);
             return player;
           },
         ),
       ],
       child: Builder(
         builder: (context) {
+          final settings = context.watch<SettingsProvider>();
+
           return MaterialApp.router(
             title: 'Quran Player',
             theme: AppTheme.light(),
             darkTheme: AppTheme.dark(),
-            themeMode: ThemeMode.system,
+            themeMode: settings.themeMode,
+            locale: settings.locale,
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
             routerConfig: _router,
             debugShowCheckedModeBanner: false,
           );
@@ -99,16 +119,16 @@ class _AppShell extends StatelessWidget {
                   context.go('/playlist');
               }
             },
-            destinations: const [
+            destinations: [
               NavigationDestination(
-                icon: Icon(Icons.menu_book_outlined),
-                selectedIcon: Icon(Icons.menu_book_rounded),
-                label: 'Surahs',
+                icon: const Icon(Icons.menu_book_outlined),
+                selectedIcon: const Icon(Icons.menu_book_rounded),
+                label: context.tr('nav_surahs'),
               ),
               NavigationDestination(
-                icon: Icon(Icons.queue_music_outlined),
-                selectedIcon: Icon(Icons.queue_music_rounded),
-                label: 'Playlist',
+                icon: const Icon(Icons.queue_music_outlined),
+                selectedIcon: const Icon(Icons.queue_music_rounded),
+                label: context.tr('nav_playlist'),
               ),
             ],
           ),

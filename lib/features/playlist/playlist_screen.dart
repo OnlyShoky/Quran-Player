@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../shared/providers/playlist_provider.dart';
 import '../../shared/providers/player_provider.dart';
 import '../../shared/widgets/reciter_selector_sheet.dart';
@@ -29,14 +30,14 @@ class PlaylistScreen extends StatelessWidget {
             title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('My Playlist', style: theme.textTheme.titleLarge),
+                Text(context.tr('playlist_title'), style: theme.textTheme.titleLarge),
                 InkWell(
                   onTap: () => showReciterSelectorModal(context),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        reciter?.name ?? 'Select Reciter',
+                        reciter?.name ?? context.tr('select_reciter'),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.primary,
                           fontWeight: FontWeight.w600,
@@ -58,7 +59,7 @@ class PlaylistScreen extends StatelessWidget {
                 TextButton(
                   onPressed: () => _confirmClear(context, playlist),
                   child: Text(
-                    'Clear',
+                    context.tr('clear_all'),
                     style: TextStyle(
                       color: isDark ? AppColors.errorDark : AppColors.errorLight,
                     ),
@@ -72,15 +73,48 @@ class PlaylistScreen extends StatelessWidget {
               child: _EmptyPlaylist(),
             )
           else ...[
-            // Summary header
+            // Summary header & Play action
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-                child: Text(
-                  '${playlist.items.length} surah${playlist.items.length == 1 ? '' : 's'}',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
-                  ),
+                padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${playlist.items.length} surah${playlist.items.length == 1 ? '' : 's'}',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    FilledButton.icon(
+                      onPressed: () {
+                        if (player.isPlaying) {
+                          player.pause();
+                        } else {
+                          player.playIndex(player.currentIndex);
+                        }
+                      },
+                      icon: Icon(
+                        player.isPlaying
+                            ? Icons.pause_rounded
+                            : Icons.play_arrow_rounded,
+                        size: 20,
+                      ),
+                      label: Text(
+                        player.isPlaying
+                            ? context.tr('pause')
+                            : context.tr('play'),
+                      ),
+                      style: FilledButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -191,7 +225,9 @@ class PlaylistScreen extends StatelessWidget {
                   icon: Icon(player.isPlaying
                       ? Icons.pause_rounded
                       : Icons.play_arrow_rounded),
-                  label: Text(player.isPlaying ? 'Pause' : 'Play Playlist'),
+                  label: Text(player.isPlaying
+                      ? context.tr('pause')
+                      : context.tr('play')),
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(52),
                     shape: RoundedRectangleBorder(
@@ -209,19 +245,19 @@ class PlaylistScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Clear playlist?'),
-        content: const Text('This will remove all surahs from your playlist.'),
+        title: Text(context.tr('clear_all')),
+        content: Text(context.tr('playlist_empty_subtitle')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(context.tr('cancel')),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
               playlist.clear();
             },
-            child: const Text('Clear'),
+            child: Text(context.tr('clear_all')),
           ),
         ],
       ),
@@ -315,14 +351,14 @@ class _EmptyPlaylist extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           Text(
-            'Your playlist is empty',
+            context.tr('playlist_empty_title'),
             style: theme.textTheme.titleMedium?.copyWith(
               color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Add surahs from the Surahs tab\nor tap "Add all" to include every chapter.',
+            context.tr('playlist_empty_subtitle'),
             textAlign: TextAlign.center,
             style: theme.textTheme.bodySmall?.copyWith(
               color: isDark ? AppColors.mutedDark : AppColors.mutedLight,

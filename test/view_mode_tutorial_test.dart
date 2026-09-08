@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
+import 'package:quran_player/core/localization/app_localizations.dart';
+import 'package:quran_player/shared/providers/settings_provider.dart';
 import 'package:quran_player/shared/providers/view_mode_provider.dart';
 import 'package:quran_player/shared/providers/playlist_provider.dart';
 import 'package:quran_player/shared/providers/player_provider.dart';
@@ -51,6 +54,7 @@ void main() {
       final viewModeProvider = ViewModeProvider();
       final playlistProvider = PlaylistProvider();
       final playerProvider = PlayerProvider();
+      final settingsProvider = SettingsProvider();
 
       // Wait for provider to load initial prefs
       await tester.runAsync(() async {
@@ -60,11 +64,20 @@ void main() {
       await tester.pumpWidget(
         MultiProvider(
           providers: [
+            ChangeNotifierProvider.value(value: settingsProvider),
             ChangeNotifierProvider.value(value: viewModeProvider),
             ChangeNotifierProvider.value(value: playlistProvider),
             ChangeNotifierProvider.value(value: playerProvider),
           ],
           child: const MaterialApp(
+            locale: Locale('es'),
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
             home: SurahListScreen(),
           ),
         ),
@@ -76,7 +89,7 @@ void main() {
 
       // Check tutorial overlay is displayed
       expect(find.byType(ViewModeTutorialOverlay), findsOneWidget);
-      expect(find.text('¡Alterna el modo de visualización!'), findsOneWidget);
+      expect(find.text('¡Personaliza tu experiencia!'), findsOneWidget);
       expect(find.text('¡Entendido!'), findsOneWidget);
 
       // Tap "¡Entendido!"
@@ -93,6 +106,7 @@ void main() {
       final viewModeProvider = ViewModeProvider();
       final playlistProvider = PlaylistProvider();
       final playerProvider = PlayerProvider();
+      final settingsProvider = SettingsProvider();
 
       await tester.runAsync(() async {
         await Future.delayed(const Duration(milliseconds: 50));
@@ -101,11 +115,20 @@ void main() {
       await tester.pumpWidget(
         MultiProvider(
           providers: [
+            ChangeNotifierProvider.value(value: settingsProvider),
             ChangeNotifierProvider.value(value: viewModeProvider),
             ChangeNotifierProvider.value(value: playlistProvider),
             ChangeNotifierProvider.value(value: playerProvider),
           ],
           child: const MaterialApp(
+            locale: Locale('es'),
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
             home: SurahListScreen(),
           ),
         ),
@@ -114,11 +137,11 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
 
-      expect(find.text('Probar Mosaico'), findsOneWidget);
+      expect(find.text('Probar modo Mosaico'), findsOneWidget);
       expect(viewModeProvider.mode, ViewMode.list);
 
-      // Tap "Probar Mosaico"
-      await tester.tap(find.text('Probar Mosaico'));
+      // Tap "Probar modo Mosaico"
+      await tester.tap(find.text('Probar modo Mosaico'));
       await tester.pumpAndSettle();
 
       // View mode toggled to mosaic

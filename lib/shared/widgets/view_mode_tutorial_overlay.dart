@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/localization/app_localizations.dart';
 
 class ViewModeTutorialOverlay extends StatefulWidget {
   final Rect targetRect;
@@ -202,7 +203,7 @@ class _ViewModeTutorialOverlayState extends State<ViewModeTutorialOverlay>
                                     ),
                                     const SizedBox(width: 5),
                                     Text(
-                                      'NUEVA VISTA DISPONIBLE',
+                                      context.tr('tutorial_badge'),
                                       style: theme.textTheme.labelSmall?.copyWith(
                                         color: primaryColor,
                                         fontWeight: FontWeight.w700,
@@ -233,7 +234,7 @@ class _ViewModeTutorialOverlayState extends State<ViewModeTutorialOverlay>
 
                           // Title
                           Text(
-                            '¡Alterna el modo de visualización!',
+                            context.tr('tutorial_title'),
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               fontSize: 17,
@@ -244,7 +245,9 @@ class _ViewModeTutorialOverlayState extends State<ViewModeTutorialOverlay>
 
                           // Description
                           Text(
-                            'Toca este botón cuando desees para alternar entre el diseño clásico en lista y el modo mosaico interactivo.',
+                            widget.isMosaic
+                                ? context.tr('tutorial_body_to_list')
+                                : context.tr('tutorial_body_to_mosaic'),
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: isDark
                                   ? AppColors.mutedDark
@@ -277,8 +280,8 @@ class _ViewModeTutorialOverlayState extends State<ViewModeTutorialOverlay>
                                 Expanded(
                                   child: _ModePreviewItem(
                                     icon: Icons.view_list_rounded,
-                                    title: 'Lista',
-                                    description: 'Detalles y orden',
+                                    title: context.tr('view_list'),
+                                    description: 'Classic & sorted',
                                     isActive: !widget.isMosaic,
                                     activeColor: primaryColor,
                                   ),
@@ -293,8 +296,8 @@ class _ViewModeTutorialOverlayState extends State<ViewModeTutorialOverlay>
                                 Expanded(
                                   child: _ModePreviewItem(
                                     icon: Icons.grid_view_rounded,
-                                    title: 'Mosaico',
-                                    description: 'Visual y moderno',
+                                    title: context.tr('view_mosaic'),
+                                    description: 'Modern & visual',
                                     isActive: widget.isMosaic,
                                     activeColor: primaryColor,
                                   ),
@@ -320,8 +323,8 @@ class _ViewModeTutorialOverlayState extends State<ViewModeTutorialOverlay>
                                   ),
                                   label: Text(
                                     widget.isMosaic
-                                        ? 'Ver Lista'
-                                        : 'Probar Mosaico',
+                                        ? context.tr('tutorial_try_list')
+                                        : context.tr('tutorial_try_mosaic'),
                                     style: TextStyle(
                                       color: primaryColor,
                                       fontWeight: FontWeight.w600,
@@ -354,9 +357,9 @@ class _ViewModeTutorialOverlayState extends State<ViewModeTutorialOverlay>
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                   ),
-                                  child: const Text(
-                                    '¡Entendido!',
-                                    style: TextStyle(
+                                  child: Text(
+                                    context.tr('tutorial_got_it'),
+                                    style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13,
                                     ),

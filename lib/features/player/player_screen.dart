@@ -3,9 +3,11 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../shared/providers/playlist_provider.dart';
 import '../../shared/providers/player_provider.dart';
 import '../../shared/widgets/reciter_selector_sheet.dart';
+import '../../shared/widgets/playback_mode_button.dart';
 
 class PlayerScreen extends StatelessWidget {
   const PlayerScreen({super.key});
@@ -100,13 +102,23 @@ class PlayerScreen extends StatelessWidget {
                   ),
                   const Spacer(),
                   Text(
-                    'Now Playing',
+                    context.tr('now_playing'),
                     style: theme.textTheme.labelLarge?.copyWith(
                       color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
                     ),
                   ),
                   const Spacer(),
-                  const SizedBox(width: 48), // balance back button
+                  IconButton(
+                    icon: const Icon(Icons.queue_music_rounded, size: 26),
+                    color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
+                    tooltip: context.tr('nav_playlist'),
+                    onPressed: () {
+                      if (context.canPop()) {
+                        context.pop();
+                      }
+                      context.go('/playlist');
+                    },
+                  ),
                 ],
               ),
             ),
@@ -162,7 +174,7 @@ class PlayerScreen extends StatelessWidget {
                     Icon(Icons.mic_rounded, size: 16, color: theme.colorScheme.primary),
                     const SizedBox(width: 6),
                     Text(
-                      reciter?.name ?? 'Select Reciter',
+                      reciter?.name ?? context.tr('select_reciter'),
                       style: theme.textTheme.labelMedium?.copyWith(
                         color: theme.colorScheme.primary,
                         fontWeight: FontWeight.w600,
@@ -246,69 +258,98 @@ class PlayerScreen extends StatelessWidget {
             const SizedBox(height: 16),
 
             // --- Playback Controls ---
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Previous Track
-                _ControlButton(
-                  icon: Icons.skip_previous_rounded,
-                  size: 36,
-                  color: currentIndex > 0
-                      ? theme.colorScheme.onSurface
-                      : (isDark ? AppColors.outlineDark : AppColors.outlineLight),
-                  onTap: player.skipPrevious,
-                ),
-                const SizedBox(width: 20),
-
-                // Play / Pause / Loading
-                GestureDetector(
-                  onTap: player.togglePlayPause,
-                  child: Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                          blurRadius: 20,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: player.isBuffering
-                        ? Center(
-                            child: SizedBox(
-                              width: 28,
-                              height: 28,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 3,
-                                color: theme.colorScheme.onPrimary,
-                              ),
-                            ),
-                          )
-                        : Icon(
-                            player.isPlaying
-                                ? Icons.pause_rounded
-                                : Icons.play_arrow_rounded,
-                            color: theme.colorScheme.onPrimary,
-                            size: 40,
-                          ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // Playback Mode (Repeat: One / Next)
+                  const PlaybackModeButton(
+                    size: 26,
+                    showBackgroundOnActive: true,
                   ),
-                ),
-                const SizedBox(width: 20),
 
-                // Next Track
-                _ControlButton(
-                  icon: Icons.skip_next_rounded,
-                  size: 36,
-                  color: currentIndex < playlist.items.length - 1
-                      ? theme.colorScheme.onSurface
-                      : (isDark ? AppColors.outlineDark : AppColors.outlineLight),
-                  onTap: player.skipNext,
-                ),
-              ],
+                  // Previous Track
+                  _ControlButton(
+                    icon: Icons.skip_previous_rounded,
+                    size: 36,
+                    color: currentIndex > 0
+                        ? theme.colorScheme.onSurface
+                        : (isDark ? AppColors.outlineDark : AppColors.outlineLight),
+                    tooltip: context.tr('previous'),
+                    onTap: player.skipPrevious,
+                  ),
+
+                  // Play / Pause / Loading
+                  GestureDetector(
+                    onTap: player.togglePlayPause,
+                    child: Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                            blurRadius: 20,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: player.isBuffering
+                          ? Center(
+                              child: SizedBox(
+                                width: 28,
+                                height: 28,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 3,
+                                  color: theme.colorScheme.onPrimary,
+                                ),
+                              ),
+                            )
+                          : Icon(
+                              player.isPlaying
+                                  ? Icons.pause_rounded
+                                  : Icons.play_arrow_rounded,
+                              color: theme.colorScheme.onPrimary,
+                              size: 40,
+                            ),
+                    ),
+                  ),
+
+                  // Next Track
+                  _ControlButton(
+                    icon: Icons.skip_next_rounded,
+                    size: 36,
+                    color: currentIndex < playlist.items.length - 1
+                        ? theme.colorScheme.onSurface
+                        : (isDark ? AppColors.outlineDark : AppColors.outlineLight),
+                    tooltip: context.tr('next'),
+                    onTap: player.skipNext,
+                  ),
+
+                  // Dedicated Stop & Dismiss Button
+                  _ControlButton(
+                    icon: Icons.stop_rounded,
+                    size: 34,
+                    color: (player.isPlaying ||
+                            player.state == PlaybackState.paused ||
+                            player.isBuffering)
+                        ? theme.colorScheme.onSurface
+                        : (isDark ? AppColors.outlineDark : AppColors.outlineLight),
+                    tooltip: context.tr('stop'),
+                    onTap: () {
+                      player.stop();
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        context.go('/surahs');
+                      }
+                    },
+                  ),
+                ],
+              ),
             ),
 
             const Spacer(flex: 2),
@@ -324,19 +365,30 @@ class _ControlButton extends StatelessWidget {
   final double size;
   final Color color;
   final VoidCallback onTap;
+  final String? tooltip;
 
   const _ControlButton({
     required this.icon,
     required this.size,
     required this.color,
     required this.onTap,
+    this.tooltip,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    final button = GestureDetector(
       onTap: onTap,
-      child: Icon(icon, size: size, color: color),
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Icon(icon, size: size, color: color),
+      ),
     );
+
+    if (tooltip != null) {
+      return Tooltip(message: tooltip!, child: button);
+    }
+    return button;
   }
 }

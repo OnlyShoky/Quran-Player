@@ -146,7 +146,7 @@ class PlaylistProvider extends ChangeNotifier {
       if (_reciters.isNotEmpty) {
         _selectedReciterId = _reciters.first.id;
       } else {
-        return -1;
+        _selectedReciterId = 1;
       }
     }
 
@@ -172,7 +172,7 @@ class PlaylistProvider extends ChangeNotifier {
       if (_reciters.isNotEmpty) {
         _selectedReciterId = _reciters.first.id;
       } else {
-        return;
+        _selectedReciterId = 1;
       }
     }
 

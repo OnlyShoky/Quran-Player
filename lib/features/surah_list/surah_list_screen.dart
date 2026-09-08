@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/data/mock_data.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../shared/providers/playlist_provider.dart';
 import '../../shared/providers/player_provider.dart';
 import '../../shared/providers/view_mode_provider.dart';
@@ -151,8 +153,16 @@ class _SurahListScreenState extends State<SurahListScreen> {
                     size: 22,
                   ),
                 ),
-                tooltip: isMosaic ? 'Switch to list view' : 'Switch to mosaic view',
+                tooltip: isMosaic
+                    ? context.tr('tooltip_list_view')
+                    : context.tr('tooltip_mosaic_view'),
                 onPressed: viewMode.toggle,
+              ),
+              // --- Settings button ---
+              IconButton(
+                icon: const Icon(Icons.settings_outlined, size: 22),
+                tooltip: context.tr('tooltip_settings'),
+                onPressed: () => context.push('/settings'),
               ),
               const SizedBox(width: 4),
             ],
@@ -172,7 +182,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
                 onChanged: (v) => setState(() => _query = v.trim()),
                 style: theme.textTheme.bodyMedium,
                 decoration: InputDecoration(
-                  hintText: 'Search surahs…',
+                  hintText: context.tr('search_surahs'),
                   hintStyle: theme.textTheme.bodyMedium?.copyWith(
                     color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
                   ),
@@ -335,7 +345,7 @@ class _ReciterSelectorHeader extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'RECITER',
+                        context.tr('reciter_label').toUpperCase(),
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: isDark
                               ? AppColors.mutedDark
@@ -346,7 +356,7 @@ class _ReciterSelectorHeader extends StatelessWidget {
                       ),
                       const SizedBox(height: 1),
                       Text(
-                        selectedReciter?.name ?? 'Select Reciter',
+                        selectedReciter?.name ?? context.tr('select_reciter'),
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -368,7 +378,7 @@ class _ReciterSelectorHeader extends StatelessWidget {
                     child: Row(
                       children: [
                         Text(
-                          'Change',
+                          context.tr('change_reciter'),
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: theme.colorScheme.onPrimary,
                             fontWeight: FontWeight.w600,

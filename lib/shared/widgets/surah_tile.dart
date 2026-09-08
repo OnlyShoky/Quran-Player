@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/models/surah.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/localization/app_localizations.dart';
 import '../providers/playlist_provider.dart';
 import '../providers/player_provider.dart';
 import '../utils/app_snackbar.dart';
@@ -106,7 +107,7 @@ class SurahTile extends StatelessWidget {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          isMeccan ? 'Meccan' : 'Medinan',
+                          isMeccan ? context.tr('meccan') : context.tr('medinan'),
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: tagFg,
                             fontSize: 10,
@@ -128,7 +129,7 @@ class SurahTile extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        '· ${surah.ayahCount} verses',
+                        '· ${context.tr('verses_count', {'count': '${surah.ayahCount}'})}',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: isDark
                               ? AppColors.mutedDark
