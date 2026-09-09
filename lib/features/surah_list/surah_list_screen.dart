@@ -38,15 +38,13 @@ class _SurahListScreenState extends State<SurahListScreen> {
   bool get _hasActiveFilters =>
       _juzController.text.trim().isNotEmpty ||
       _fromController.text.trim().isNotEmpty ||
-      _toController.text.trim().isNotEmpty ||
-      _isReversed;
+      _toController.text.trim().isNotEmpty;
 
   void _clearFilters() {
     setState(() {
       _juzController.clear();
       _fromController.clear();
       _toController.clear();
-      _isReversed = false;
     });
   }
 
@@ -229,373 +227,139 @@ class _SurahListScreenState extends State<SurahListScreen> {
             child: _ReciterSelectorHeader(),
           ),
 
-          // --- Search bar ---
+          // --- Search bar & inline filter boxes ---
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-              child: TextField(
-                controller: _searchController,
-                onChanged: (v) => setState(() => _query = v.trim()),
-                style: theme.textTheme.bodyMedium,
-                decoration: InputDecoration(
-                  hintText: context.tr('search_surahs'),
-                  hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                    color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
-                  ),
-                  prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                  suffixIcon: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (_query.isNotEmpty)
-                        IconButton(
-                          icon: const Icon(Icons.clear_rounded, size: 18),
-                          tooltip: context.tr('clear_all'),
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() => _query = '');
-                          },
+              child: Row(
+                children: [
+                  // Main search field
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (v) => setState(() => _query = v.trim()),
+                      style: theme.textTheme.bodyMedium,
+                      decoration: InputDecoration(
+                        hintText: context.tr('search_surahs'),
+                        hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                          color: isDark
+                              ? AppColors.mutedDark
+                              : AppColors.mutedLight,
                         ),
-                      IconButton(
-                        icon: Badge(
-                          isLabelVisible: _hasActiveFilters,
-                          smallSize: 8,
-                          backgroundColor: theme.colorScheme.primary,
-                          child: Icon(
-                            _showFilters
-                                ? Icons.filter_list_rounded
-                                : Icons.tune_rounded,
-                            size: 20,
-                            color: (_showFilters || _hasActiveFilters)
-                                ? theme.colorScheme.primary
-                                : (isDark
-                                    ? AppColors.mutedDark
-                                    : AppColors.mutedLight),
-                          ),
+                        prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                        suffixIcon: _query.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear_rounded, size: 16),
+                                tooltip: context.tr('clear_all'),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _query = '');
+                                },
+                              )
+                            : null,
+                        filled: true,
+                        fillColor: isDark
+                            ? AppColors.surfaceContainerDark
+                            : AppColors.surfaceContainerLight,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
                         ),
-                        tooltip: context.tr('filters'),
-                        onPressed: () =>
-                            setState(() => _showFilters = !_showFilters),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 10,
+                          horizontal: 8,
+                        ),
+                        isDense: true,
                       ),
-                    ],
+                    ),
                   ),
-                  filled: true,
-                  fillColor: isDark
-                      ? AppColors.surfaceContainerDark
-                      : AppColors.surfaceContainerLight,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
+
+                  // Small filter boxes next to search bar
+                  if (_showFilters) ...[
+                    const SizedBox(width: 6),
+                    _buildSmallFilterBox(
+                      controller: _juzController,
+                      hint: 'Juz',
+                      tooltip: '${context.tr('filter_juz')} (1 - 30)',
+                      width: 42,
+                      maxLength: 2,
+                      isDark: isDark,
+                      theme: theme,
+                    ),
+                    const SizedBox(width: 4),
+                    _buildSmallFilterBox(
+                      controller: _fromController,
+                      hint: '1',
+                      tooltip: '${context.tr('filter_from')} (1 - 114)',
+                      width: 40,
+                      maxLength: 3,
+                      isDark: isDark,
+                      theme: theme,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                      child: Text(
+                        '–',
+                        style: TextStyle(
+                          color: isDark
+                              ? AppColors.mutedDark
+                              : AppColors.mutedLight,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    _buildSmallFilterBox(
+                      controller: _toController,
+                      hint: '114',
+                      tooltip: '${context.tr('filter_to')} (1 - 114)',
+                      width: 40,
+                      maxLength: 3,
+                      isDark: isDark,
+                      theme: theme,
+                    ),
+                  ],
+
+                  const SizedBox(width: 6),
+
+                  // Filter toggle button
+                  Container(
+                    height: 42,
+                    width: 42,
+                    decoration: BoxDecoration(
+                      color: (_showFilters || _hasActiveFilters)
+                          ? theme.colorScheme.primary.withValues(alpha: 0.15)
+                          : (isDark
+                              ? AppColors.surfaceContainerDark
+                              : AppColors.surfaceContainerLight),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      icon: Badge(
+                        isLabelVisible: _hasActiveFilters,
+                        smallSize: 8,
+                        backgroundColor: theme.colorScheme.primary,
+                        child: Icon(
+                          _showFilters
+                              ? Icons.filter_list_rounded
+                              : Icons.tune_rounded,
+                          size: 20,
+                          color: (_showFilters || _hasActiveFilters)
+                              ? theme.colorScheme.primary
+                              : (isDark
+                                  ? AppColors.mutedDark
+                                  : AppColors.mutedLight),
+                        ),
+                      ),
+                      tooltip: context.tr('filters'),
+                      onPressed: () =>
+                          setState(() => _showFilters = !_showFilters),
+                    ),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                ),
+                ],
               ),
             ),
           ),
-
-          // --- Collapsible filter panel ---
-          if (_showFilters)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? AppColors.surfaceContainerDark
-                        : AppColors.surfaceContainerLight,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: isDark
-                          ? AppColors.outlineDark.withValues(alpha: 0.5)
-                          : AppColors.outlineLight.withValues(alpha: 0.5),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Header: Title + Clear
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Flexible(
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.tune_rounded,
-                                  size: 18,
-                                  color: theme.colorScheme.primary,
-                                ),
-                                const SizedBox(width: 6),
-                                Flexible(
-                                  child: Text(
-                                    context.tr('filters'),
-                                    style: theme.textTheme.titleSmall?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (_hasActiveFilters)
-                            InkWell(
-                              borderRadius: BorderRadius.circular(6),
-                              onTap: _clearFilters,
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 6, vertical: 2),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.restart_alt_rounded,
-                                      size: 15,
-                                      color: theme.colorScheme.primary,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      context.tr('filter_clear'),
-                                      style:
-                                          theme.textTheme.labelSmall?.copyWith(
-                                        color: theme.colorScheme.primary,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Filter 1: Juz (1-30)
-                      TextField(
-                        controller: _juzController,
-                        keyboardType: TextInputType.number,
-                        style: theme.textTheme.bodyMedium,
-                        onChanged: (_) => setState(() {}),
-                        decoration: InputDecoration(
-                          labelText: '${context.tr('filter_juz')} (1 - 30)',
-                          hintText: '1 - 30',
-                          prefixIcon: const Icon(
-                            Icons.auto_stories_outlined,
-                            size: 18,
-                          ),
-                          suffixIcon: _juzController.text.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear_rounded,
-                                      size: 16),
-                                  onPressed: () {
-                                    _juzController.clear();
-                                    setState(() {});
-                                  },
-                                )
-                              : null,
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 10),
-                          filled: true,
-                          fillColor: isDark
-                              ? AppColors.surfaceDark
-                              : AppColors.surfaceLight,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(
-                              color: isDark
-                                  ? AppColors.outlineDark
-                                  : AppColors.outlineLight,
-                            ),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(
-                              color: isDark
-                                  ? AppColors.outlineDark.withValues(alpha: 0.5)
-                                  : AppColors.outlineLight.withValues(alpha: 0.5),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-
-                      // Filter 2 & 3: Surah Range (From ... To ...)
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _fromController,
-                              keyboardType: TextInputType.number,
-                              style: theme.textTheme.bodyMedium,
-                              onChanged: (_) => setState(() {}),
-                              decoration: InputDecoration(
-                                labelText: context.tr('filter_from'),
-                                hintText: '1',
-                                prefixIcon: const Icon(
-                                  Icons.tag_rounded,
-                                  size: 18,
-                                ),
-                                suffixIcon: _fromController.text.isNotEmpty
-                                    ? IconButton(
-                                        icon: const Icon(Icons.clear_rounded,
-                                            size: 16),
-                                        onPressed: () {
-                                          _fromController.clear();
-                                          setState(() {});
-                                        },
-                                      )
-                                    : null,
-                                isDense: true,
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 10),
-                                filled: true,
-                                fillColor: isDark
-                                    ? AppColors.surfaceDark
-                                    : AppColors.surfaceLight,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide(
-                                    color: isDark
-                                        ? AppColors.outlineDark
-                                        : AppColors.outlineLight,
-                                  ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide(
-                                    color: isDark
-                                        ? AppColors.outlineDark.withValues(alpha: 0.5)
-                                        : AppColors.outlineLight
-                                            .withValues(alpha: 0.5),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 8),
-                            child: Icon(
-                              Icons.arrow_forward_rounded,
-                              size: 16,
-                            ),
-                          ),
-                          Expanded(
-                            child: TextField(
-                              controller: _toController,
-                              keyboardType: TextInputType.number,
-                              style: theme.textTheme.bodyMedium,
-                              onChanged: (_) => setState(() {}),
-                              decoration: InputDecoration(
-                                labelText: context.tr('filter_to'),
-                                hintText: '114',
-                                prefixIcon: const Icon(
-                                  Icons.tag_rounded,
-                                  size: 18,
-                                ),
-                                suffixIcon: _toController.text.isNotEmpty
-                                    ? IconButton(
-                                        icon: const Icon(Icons.clear_rounded,
-                                            size: 16),
-                                        onPressed: () {
-                                          _toController.clear();
-                                          setState(() {});
-                                        },
-                                      )
-                                    : null,
-                                isDense: true,
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 10),
-                                filled: true,
-                                fillColor: isDark
-                                    ? AppColors.surfaceDark
-                                    : AppColors.surfaceLight,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide(
-                                    color: isDark
-                                        ? AppColors.outlineDark
-                                        : AppColors.outlineLight,
-                                  ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide(
-                                    color: isDark
-                                        ? AppColors.outlineDark.withValues(alpha: 0.5)
-                                        : AppColors.outlineLight
-                                            .withValues(alpha: 0.5),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-
-                      // Reverse order toggle inside filter panel
-                      InkWell(
-                        borderRadius: BorderRadius.circular(10),
-                        onTap: () => setState(() => _isReversed = !_isReversed),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 4, vertical: 6),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.swap_vert_rounded,
-                                      size: 20,
-                                      color: _isReversed
-                                          ? theme.colorScheme.primary
-                                          : (isDark
-                                              ? AppColors.mutedDark
-                                              : AppColors.mutedLight),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Flexible(
-                                      child: Text(
-                                        context.tr('reverse_order'),
-                                        style:
-                                            theme.textTheme.bodyMedium?.copyWith(
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      _isReversed ? '(114 → 1)' : '(1 → 114)',
-                                      style: theme.textTheme.labelSmall?.copyWith(
-                                        color: isDark
-                                            ? AppColors.mutedDark
-                                            : AppColors.mutedLight,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Switch.adaptive(
-                                value: _isReversed,
-                                onChanged: (v) =>
-                                    setState(() => _isReversed = v),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
 
           // --- Surah count & quick reverse ---
           SliverToBoxAdapter(
@@ -604,12 +368,54 @@ class _SurahListScreenState extends State<SurahListScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    (!_hasActiveFilters && _query.isEmpty)
-                        ? '114 chapters'
-                        : '${filtered.length} result${filtered.length == 1 ? '' : 's'}',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
+                  Flexible(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            (!_hasActiveFilters && _query.isEmpty)
+                                ? '114 chapters'
+                                : '${filtered.length} result${filtered.length == 1 ? '' : 's'}',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (_hasActiveFilters) ...[
+                          const SizedBox(width: 8),
+                          InkWell(
+                            borderRadius: BorderRadius.circular(6),
+                            onTap: _clearFilters,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.close_rounded,
+                                    size: 13,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    context.tr('filter_clear'),
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: theme.colorScheme.primary,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                   InkWell(
@@ -722,6 +528,78 @@ class _SurahListScreenState extends State<SurahListScreen> {
               label: const Text('Add all'),
             )
           : null,
+    );
+  }
+
+  Widget _buildSmallFilterBox({
+    required TextEditingController controller,
+    required String hint,
+    required String tooltip,
+    required double width,
+    required int maxLength,
+    required bool isDark,
+    required ThemeData theme,
+  }) {
+    final hasValue = controller.text.trim().isNotEmpty;
+    return Tooltip(
+      message: tooltip,
+      child: SizedBox(
+        width: width,
+        height: 42,
+        child: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          textAlign: TextAlign.center,
+          maxLength: maxLength,
+          style: theme.textTheme.bodySmall?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: hasValue ? theme.colorScheme.primary : null,
+          ),
+          onChanged: (_) => setState(() {}),
+          decoration: InputDecoration(
+            hintText: hint,
+            counterText: '',
+            hintStyle: theme.textTheme.labelSmall?.copyWith(
+              color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
+              fontSize: 11,
+            ),
+            filled: true,
+            fillColor: hasValue
+                ? theme.colorScheme.primary.withValues(alpha: 0.12)
+                : (isDark
+                    ? AppColors.surfaceContainerDark
+                    : AppColors.surfaceContainerLight),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: hasValue
+                  ? BorderSide(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                    )
+                  : BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: hasValue
+                  ? BorderSide(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                    )
+                  : BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(
+                color: theme.colorScheme.primary,
+                width: 1.5,
+              ),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 10,
+              horizontal: 2,
+            ),
+            isDense: true,
+          ),
+        ),
+      ),
     );
   }
 }

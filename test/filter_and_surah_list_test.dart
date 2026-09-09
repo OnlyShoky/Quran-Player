@@ -111,18 +111,19 @@ void main() {
       final filterButton = find.byTooltip('Filters');
       expect(filterButton, findsOneWidget);
 
-      // Initially filter panel is not shown
-      expect(find.text('Juz (1 - 30)'), findsNothing);
+      // Initially small filter boxes are not shown
+      expect(find.widgetWithText(TextField, 'Juz'), findsNothing);
 
       // Tap filter button to open
       await tester.tap(filterButton);
       await tester.pumpAndSettle();
 
-      // Filter panel is now visible
-      expect(find.text('Juz (1 - 30)'), findsOneWidget);
-      expect(find.text('From'), findsOneWidget);
-      expect(find.text('To'), findsOneWidget);
-      expect(find.text('Reverse order'), findsOneWidget);
+      // Small filter boxes are now visible next to search bar
+      expect(find.widgetWithText(TextField, 'Juz'), findsOneWidget);
+      expect(find.widgetWithText(TextField, '1'), findsOneWidget);
+      expect(find.widgetWithText(TextField, '114'), findsOneWidget);
+      // Reverse order is NOT in the filter menu
+      expect(find.text('Reverse order'), findsNothing);
     });
 
     testWidgets('Juz filter shows only surahs in specified Juz', (tester) async {
@@ -133,12 +134,12 @@ void main() {
       await tester.pumpWidget(createTestWidget(const SurahListScreen()));
       await tester.pumpAndSettle();
 
-      // Open filter panel
+      // Open filter boxes
       await tester.tap(find.byTooltip('Filters'));
       await tester.pumpAndSettle();
 
       // Enter Juz 1
-      final juzField = find.widgetWithText(TextField, 'Juz (1 - 30)');
+      final juzField = find.widgetWithText(TextField, 'Juz');
       await tester.enterText(juzField, '1');
       await tester.pumpAndSettle();
 
@@ -157,13 +158,13 @@ void main() {
       await tester.pumpWidget(createTestWidget(const SurahListScreen()));
       await tester.pumpAndSettle();
 
-      // Open filter panel
+      // Open filter boxes
       await tester.tap(find.byTooltip('Filters'));
       await tester.pumpAndSettle();
 
       // Enter From: 110, To: 114
-      final fromField = find.widgetWithText(TextField, 'From');
-      final toField = find.widgetWithText(TextField, 'To');
+      final fromField = find.widgetWithText(TextField, '1');
+      final toField = find.widgetWithText(TextField, '114');
       await tester.enterText(fromField, '110');
       await tester.enterText(toField, '114');
       await tester.pumpAndSettle();
@@ -205,18 +206,18 @@ void main() {
       await tester.pumpWidget(createTestWidget(const SurahListScreen()));
       await tester.pumpAndSettle();
 
-      // Open filter panel
+      // Open filter boxes
       await tester.tap(find.byTooltip('Filters'));
       await tester.pumpAndSettle();
 
       // Enter Juz 30
-      final juzField = find.widgetWithText(TextField, 'Juz (1 - 30)');
+      final juzField = find.widgetWithText(TextField, 'Juz');
       await tester.enterText(juzField, '30');
       await tester.pumpAndSettle();
 
       expect(find.text('37 results'), findsOneWidget);
 
-      // Tap Clear filters
+      // Tap Clear filters button in count bar
       await tester.tap(find.text('Clear Filters'));
       await tester.pumpAndSettle();
 
