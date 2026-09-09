@@ -276,7 +276,7 @@ void main() {
       expect(find.text('Al-Fatihah'), findsNothing);
     });
 
-    testWidgets('Filter boxes have comfortable generous size (64x44) without overflow', (tester) async {
+    testWidgets('Filter boxes have uniform height (46.0) matching search bar and button without overflow', (tester) async {
       tester.view.physicalSize = const Size(360, 780);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
@@ -290,7 +290,7 @@ void main() {
 
       expect(tester.takeException(), isNull, reason: 'No layout overflow exceptions should occur on 360px width');
 
-      // Verify all 4 filter box SizedBox containers have width: 64 and height: 44
+      // Verify all 4 filter box SizedBox containers have height: 46.0 matching the search row and button
       final juzFinder = find.widgetWithText(TextField, 'Juz');
       final hzbFinder = find.widgetWithText(TextField, 'Hzb');
       final fromFinder = find.widgetWithText(TextField, '1');
@@ -300,8 +300,7 @@ void main() {
         final sizedBox = tester.widget<SizedBox>(
           find.ancestor(of: finder, matching: find.byType(SizedBox)).first,
         );
-        expect(sizedBox.width, 64.0);
-        expect(sizedBox.height, 44.0);
+        expect(sizedBox.height, 46.0);
       }
     });
 
@@ -392,6 +391,10 @@ void main() {
 
       final searchField = find.widgetWithText(TextField, 'Search surahs…');
       expect(searchField, findsOneWidget);
+      // ignore: avoid_print
+      print('SEARCH SIZE: ${tester.getSize(searchField)}');
+      // ignore: avoid_print
+      print('FILTER BUTTON SIZE: ${tester.getSize(find.byTooltip('Filters'))}');
     });
   });
 

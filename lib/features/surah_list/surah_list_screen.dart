@@ -1,8 +1,10 @@
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../core/data/mock_data.dart';
 import '../../core/data/surah_filter_data.dart';
 import '../../core/constants/app_colors.dart';
@@ -54,7 +56,9 @@ class _SurahListScreenState extends State<SurahListScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _checkAndShowTutorial());
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _checkAndShowTutorial(),
+    );
   }
 
   @override
@@ -156,7 +160,8 @@ class _SurahListScreenState extends State<SurahListScreen> {
       // 1. Text query filter
       if (_query.isNotEmpty) {
         final q = _query.toLowerCase();
-        final matchesText = s.nameEn.toLowerCase().contains(q) ||
+        final matchesText =
+            s.nameEn.toLowerCase().contains(q) ||
             s.nameEnTranslation.toLowerCase().contains(q) ||
             s.localizedTranslation(context).toLowerCase().contains(q) ||
             s.nameAr.contains(q) ||
@@ -191,8 +196,9 @@ class _SurahListScreenState extends State<SurahListScreen> {
       return true;
     }).toList();
 
-    final filtered =
-        _isReversed ? baseFiltered.reversed.toList() : baseFiltered;
+    final filtered = _isReversed
+        ? baseFiltered.reversed.toList()
+        : baseFiltered;
 
     return Scaffold(
       body: CustomScrollView(
@@ -220,10 +226,8 @@ class _SurahListScreenState extends State<SurahListScreen> {
                 key: _viewModeButtonKey,
                 icon: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 200),
-                  transitionBuilder: (child, animation) => ScaleTransition(
-                    scale: animation,
-                    child: child,
-                  ),
+                  transitionBuilder: (child, animation) =>
+                      ScaleTransition(scale: animation, child: child),
                   child: Icon(
                     isMosaic
                         ? Icons.view_list_rounded
@@ -248,12 +252,11 @@ class _SurahListScreenState extends State<SurahListScreen> {
           ),
 
           // --- Reciter selector card ---
-          SliverToBoxAdapter(
-            child: _ReciterSelectorHeader(),
-          ),
+          SliverToBoxAdapter(child: _ReciterSelectorHeader()),
 
           // --- Search bar & inline filter boxes ---
           // --- Search bar & filter button ---
+          // --- Search bar & inline filter boxes ---
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
@@ -275,16 +278,11 @@ class _SurahListScreenState extends State<SurahListScreen> {
                         prefixIcon: const Icon(Icons.search_rounded, size: 20),
                         prefixIconConstraints: const BoxConstraints(
                           minWidth: 38,
-                          minHeight: 46,
+                          minHeight: 44,
                         ),
                         suffixIcon: _query.isNotEmpty
                             ? IconButton(
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(
-                                  minWidth: 32,
-                                  minHeight: 46,
-                                ),
-                                icon: const Icon(Icons.clear_rounded, size: 18),
+                                icon: const Icon(Icons.clear_rounded, size: 16),
                                 tooltip: context.tr('clear_all'),
                                 onPressed: () {
                                   _searchController.clear();
@@ -292,20 +290,16 @@ class _SurahListScreenState extends State<SurahListScreen> {
                                 },
                               )
                             : null,
-                        suffixIconConstraints: const BoxConstraints(
-                          minWidth: 32,
-                          minHeight: 46,
-                        ),
                         filled: true,
                         fillColor: isDark
                             ? AppColors.surfaceContainerDark
                             : AppColors.surfaceContainerLight,
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
                         ),
                         contentPadding: const EdgeInsets.symmetric(
-                          vertical: 12,
+                          vertical: 10,
                           horizontal: 8,
                         ),
                         isDense: true,
@@ -313,29 +307,92 @@ class _SurahListScreenState extends State<SurahListScreen> {
                     ),
                   ),
 
-                  const SizedBox(width: 8),
+                  // Small filter boxes next to search bar
+                  if (_showFilters) ...[
+                    const SizedBox(width: 5),
+                    _buildSmallFilterBox(
+                      controller: _juzController,
+                      hint: 'Juz',
+                      tooltip: '${context.tr('filter_juz')} (1 - 30)',
+                      minVal: 1,
+                      maxVal: 30,
+                      maxLength: 2,
+                      width: 40,
+                      isDark: isDark,
+                      theme: theme,
+                    ),
+                    const SizedBox(width: 3),
+                    _buildSmallFilterBox(
+                      controller: _hizbController,
+                      hint: 'Hzb',
+                      tooltip: '${context.tr('filter_hizb')} (1 - 60)',
+                      minVal: 1,
+                      maxVal: 60,
+                      maxLength: 2,
+                      width: 40,
+                      isDark: isDark,
+                      theme: theme,
+                    ),
+                    const SizedBox(width: 3),
+                    _buildSmallFilterBox(
+                      controller: _fromController,
+                      hint: '1',
+                      tooltip: '${context.tr('filter_from')} (1 - 114)',
+                      minVal: 1,
+                      maxVal: 114,
+                      maxLength: 3,
+                      width: 38,
+                      isDark: isDark,
+                      theme: theme,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 1),
+                      child: Text(
+                        '–',
+                        style: TextStyle(
+                          color: isDark
+                              ? AppColors.mutedDark
+                              : AppColors.mutedLight,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    _buildSmallFilterBox(
+                      controller: _toController,
+                      hint: '114',
+                      tooltip: '${context.tr('filter_to')} (1 - 114)',
+                      minVal: 1,
+                      maxVal: 114,
+                      maxLength: 3,
+                      width: 38,
+                      isDark: isDark,
+                      theme: theme,
+                    ),
+                  ],
+
+                  const SizedBox(width: 5),
 
                   // Filter toggle button
                   Container(
-                    height: 46,
-                    width: 46,
+                    height: 44,
+                    width: 44,
                     decoration: BoxDecoration(
                       color: (_showFilters || _hasActiveFilters)
                           ? theme.colorScheme.primary.withValues(alpha: 0.15)
                           : (isDark
-                              ? AppColors.surfaceContainerDark
-                              : AppColors.surfaceContainerLight),
-                      borderRadius: BorderRadius.circular(14),
+                                ? AppColors.surfaceContainerDark
+                                : AppColors.surfaceContainerLight),
+                      borderRadius: BorderRadius.circular(12),
                       border: (_showFilters || _hasActiveFilters)
-                          ? Border.all(color: theme.colorScheme.primary, width: 1.5)
+                          ? Border.all(
+                              color: theme.colorScheme.primary,
+                              width: 1.5,
+                            )
                           : null,
                     ),
                     child: IconButton(
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(
-                        minWidth: 46,
-                        minHeight: 46,
-                      ),
                       icon: Badge(
                         isLabelVisible: _hasActiveFilters,
                         smallSize: 8,
@@ -348,8 +405,8 @@ class _SurahListScreenState extends State<SurahListScreen> {
                           color: (_showFilters || _hasActiveFilters)
                               ? theme.colorScheme.primary
                               : (isDark
-                                  ? AppColors.mutedDark
-                                  : AppColors.mutedLight),
+                                    ? AppColors.mutedDark
+                                    : AppColors.mutedLight),
                         ),
                       ),
                       tooltip: context.tr('filters'),
@@ -361,94 +418,6 @@ class _SurahListScreenState extends State<SurahListScreen> {
               ),
             ),
           ),
-
-          // --- Dedicated Expandable Filter Row (when _showFilters is true) ---
-          if (_showFilters)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 2, 16, 6),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _buildSmallFilterBox(
-                        controller: _juzController,
-                        hint: 'Juz',
-                        tooltip: '${context.tr('filter_juz')} (1 - 30)',
-                        minVal: 1,
-                        maxVal: 30,
-                        maxLength: 2,
-                        width: 64,
-                        isDark: isDark,
-                        theme: theme,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildSmallFilterBox(
-                        controller: _hizbController,
-                        hint: 'Hzb',
-                        tooltip: '${context.tr('filter_hizb')} (1 - 60)',
-                        minVal: 1,
-                        maxVal: 60,
-                        maxLength: 2,
-                        width: 64,
-                        isDark: isDark,
-                        theme: theme,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildSmallFilterBox(
-                        controller: _fromController,
-                        hint: '1',
-                        tooltip: '${context.tr('filter_from')} (1 - 114)',
-                        minVal: 1,
-                        maxVal: 114,
-                        maxLength: 3,
-                        width: 64,
-                        isDark: isDark,
-                        theme: theme,
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: Text(
-                          '–',
-                          style: TextStyle(
-                            color: isDark
-                                ? AppColors.mutedDark
-                                : AppColors.mutedLight,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                      _buildSmallFilterBox(
-                        controller: _toController,
-                        hint: '114',
-                        tooltip: '${context.tr('filter_to')} (1 - 114)',
-                        minVal: 1,
-                        maxVal: 114,
-                        maxLength: 3,
-                        width: 64,
-                        isDark: isDark,
-                        theme: theme,
-                      ),
-                      if (_hasActiveFilters) ...[
-                        const SizedBox(width: 6),
-                        IconButton(
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                          icon: Icon(
-                            Icons.cancel_rounded,
-                            size: 20,
-                            color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
-                          ),
-                          tooltip: context.tr('filter_clear'),
-                          onPressed: _clearFilters,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-            ),
 
           // --- Surah count & quick reverse ---
           SliverToBoxAdapter(
@@ -467,7 +436,9 @@ class _SurahListScreenState extends State<SurahListScreen> {
                                 ? '114 chapters'
                                 : '${filtered.length} result${filtered.length == 1 ? '' : 's'}',
                             style: theme.textTheme.labelSmall?.copyWith(
-                              color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
+                              color: isDark
+                                  ? AppColors.mutedDark
+                                  : AppColors.mutedLight,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -512,7 +483,9 @@ class _SurahListScreenState extends State<SurahListScreen> {
                     onTap: () => setState(() => _isReversed = !_isReversed),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 4),
+                        horizontal: 6,
+                        vertical: 4,
+                      ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -522,8 +495,8 @@ class _SurahListScreenState extends State<SurahListScreen> {
                             color: _isReversed
                                 ? theme.colorScheme.primary
                                 : (isDark
-                                    ? AppColors.mutedDark
-                                    : AppColors.mutedLight),
+                                      ? AppColors.mutedDark
+                                      : AppColors.mutedLight),
                           ),
                           const SizedBox(width: 4),
                           Text(
@@ -532,8 +505,8 @@ class _SurahListScreenState extends State<SurahListScreen> {
                               color: _isReversed
                                   ? theme.colorScheme.primary
                                   : (isDark
-                                      ? AppColors.mutedDark
-                                      : AppColors.mutedLight),
+                                        ? AppColors.mutedDark
+                                        : AppColors.mutedLight),
                               fontWeight: _isReversed
                                   ? FontWeight.bold
                                   : FontWeight.normal,
@@ -552,16 +525,19 @@ class _SurahListScreenState extends State<SurahListScreen> {
           if (filtered.isEmpty)
             SliverToBoxAdapter(
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 48,
+                  horizontal: 24,
+                ),
                 child: Center(
                   child: Column(
                     children: [
                       Icon(
                         Icons.search_off_rounded,
                         size: 48,
-                        color:
-                            isDark ? AppColors.mutedDark : AppColors.mutedLight,
+                        color: isDark
+                            ? AppColors.mutedDark
+                            : AppColors.mutedLight,
                       ),
                       const SizedBox(height: 12),
                       Text(
@@ -581,26 +557,23 @@ class _SurahListScreenState extends State<SurahListScreen> {
             MosaicGridView(surahs: filtered)
           else
             SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final surah = filtered[index];
-                  return Column(
-                    children: [
-                      SurahTile(surah: surah),
-                      if (index < filtered.length - 1)
-                        Divider(
-                          indent: 70,
-                          endIndent: 16,
-                          height: 1,
-                          color: isDark
-                              ? AppColors.outlineDark
-                              : AppColors.outlineLight,
-                        ),
-                    ],
-                  );
-                },
-                childCount: filtered.length,
-              ),
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final surah = filtered[index];
+                return Column(
+                  children: [
+                    SurahTile(surah: surah),
+                    if (index < filtered.length - 1)
+                      Divider(
+                        indent: 70,
+                        endIndent: 16,
+                        height: 1,
+                        color: isDark
+                            ? AppColors.outlineDark
+                            : AppColors.outlineLight,
+                      ),
+                  ],
+                );
+              }, childCount: filtered.length),
             ),
 
           // Bottom padding so mini-player doesn't hide last item
@@ -634,7 +607,8 @@ class _SurahListScreenState extends State<SurahListScreen> {
     final text = controller.text.trim();
     final hasValue = text.isNotEmpty;
     final val = int.tryParse(text);
-    final bool isValid = hasValue && val != null && val >= minVal && val <= maxVal;
+    final bool isValid =
+        hasValue && val != null && val >= minVal && val <= maxVal;
     final bool isInvalid = hasValue && !isValid;
 
     final Color? stateColor = isInvalid
@@ -644,8 +618,8 @@ class _SurahListScreenState extends State<SurahListScreen> {
     final Color fillColor = stateColor != null
         ? stateColor.withValues(alpha: 0.14)
         : (isDark
-            ? AppColors.surfaceContainerDark
-            : AppColors.surfaceContainerLight);
+              ? AppColors.surfaceContainerDark
+              : AppColors.surfaceContainerLight);
 
     final BorderSide borderSide = stateColor != null
         ? BorderSide(color: stateColor, width: 1.5)
@@ -665,6 +639,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
           style: theme.textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.w600,
             color: stateColor,
+            fontSize: 13,
           ),
           onChanged: (_) => setState(() {}),
           decoration: InputDecoration(
@@ -690,7 +665,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
                   ? BorderSide(color: stateColor, width: 2)
                   : BorderSide(color: theme.colorScheme.primary, width: 1.5),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+            contentPadding: const EdgeInsets.symmetric(vertical: 12),
             isDense: true,
           ),
         ),
@@ -802,7 +777,9 @@ class _ReciterSelectorHeader extends StatelessWidget {
                   const SizedBox(width: 6),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 6),
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.primary,
                       borderRadius: BorderRadius.circular(20),
@@ -851,10 +828,7 @@ class _ReciterSelectorHeader extends StatelessWidget {
       child: Row(
         children: [
           // Main bar on left
-          Expanded(
-            flex: 5,
-            child: buildMainCard(isCompact: true),
-          ),
+          Expanded(flex: 5, child: buildMainCard(isCompact: true)),
           const SizedBox(width: 8),
 
           // Quick-select pinned reciter buttons on right
@@ -868,8 +842,8 @@ class _ReciterSelectorHeader extends StatelessWidget {
                   color: isSelected
                       ? theme.colorScheme.primary
                       : (isDark
-                          ? AppColors.surfaceContainerDark
-                          : AppColors.surfaceContainerLight),
+                            ? AppColors.surfaceContainerDark
+                            : AppColors.surfaceContainerLight),
                   borderRadius: BorderRadius.circular(14),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(14),
@@ -904,8 +878,8 @@ class _ReciterSelectorHeader extends StatelessWidget {
                               color: isSelected
                                   ? theme.colorScheme.onPrimary
                                   : (isDark
-                                      ? AppColors.onSurfaceDark
-                                      : AppColors.onSurfaceLight),
+                                        ? AppColors.onSurfaceDark
+                                        : AppColors.onSurfaceLight),
                               fontWeight: isSelected
                                   ? FontWeight.w700
                                   : FontWeight.w500,
