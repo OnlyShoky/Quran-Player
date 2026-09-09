@@ -91,26 +91,33 @@ class SurahTile extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        surah.nameEn,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          color: isCurrentlyPlaying ? theme.colorScheme.primary : null,
-                          fontWeight: isCurrentlyPlaying ? FontWeight.w700 : null,
+                      Expanded(
+                        child: Text(
+                          surah.nameEn,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            color: isCurrentlyPlaying ? theme.colorScheme.primary : null,
+                            fontWeight: isCurrentlyPlaying ? FontWeight.w700 : null,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: tagBg,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          isMeccan ? context.tr('meccan') : context.tr('medinan'),
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: tagFg,
-                            fontSize: 10,
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 5, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: tagBg,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            isMeccan ? context.tr('meccan') : context.tr('medinan'),
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: tagFg,
+                              fontSize: 10,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ),
@@ -119,21 +126,27 @@ class SurahTile extends StatelessWidget {
                   const SizedBox(height: 2),
                   Row(
                     children: [
-                      Text(
-                        surah.nameEnTranslation,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: isDark
-                              ? AppColors.mutedDark
-                              : AppColors.mutedLight,
+                      Expanded(
+                        child: Text(
+                          surah.nameEnTranslation,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: isDark
+                                ? AppColors.mutedDark
+                                : AppColors.mutedLight,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '· ${context.tr('verses_count', {'count': '${surah.ayahCount}'})}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: isDark
-                              ? AppColors.mutedDark
-                              : AppColors.mutedLight,
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          '· ${context.tr('verses_count', {'count': '${surah.ayahCount}'})}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: isDark
+                                ? AppColors.mutedDark
+                                : AppColors.mutedLight,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -141,6 +154,8 @@ class SurahTile extends StatelessWidget {
                 ],
               ),
             ),
+
+            const SizedBox(width: 8),
 
             // --- Arabic name ---
             Text(
@@ -151,7 +166,7 @@ class SurahTile extends StatelessWidget {
                 color: theme.colorScheme.primary,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
 
             // --- Add/remove button ---
             AnimatedSwitcher(

@@ -429,28 +429,33 @@ class _ModePreviewItem extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: theme.textTheme.labelMedium?.copyWith(
-                fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-                color: isActive
-                    ? (isDark
-                        ? AppColors.onSurfaceDark
-                        : AppColors.onSurfaceLight)
-                    : (isDark ? AppColors.mutedDark : AppColors.mutedLight),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                  color: isActive
+                      ? (isDark
+                          ? AppColors.onSurfaceDark
+                          : AppColors.onSurfaceLight)
+                      : (isDark ? AppColors.mutedDark : AppColors.mutedLight),
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-            Text(
-              description,
-              style: theme.textTheme.labelSmall?.copyWith(
-                fontSize: 9.5,
-                color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
+              Text(
+                description,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  fontSize: 9.5,
+                  color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );

@@ -144,10 +144,16 @@ class PlayerProvider extends ChangeNotifier {
       } else if (playing && processingState != ProcessingState.completed) {
         _state = PlaybackState.playing;
       } else if (processingState == ProcessingState.completed) {
-        _state = PlaybackState.stopped;
+        // Handle track completion: call _onTrackCompleted BEFORE setting
+        // stopped state so that 'next' action can transition directly
+        // to the next track without broadcasting a stopped state first.
         _position = Duration.zero;
         _progress = 0.0;
         _onTrackCompleted();
+        // If _onTrackCompleted didn't start a new track, set stopped
+        if (_state != PlaybackState.playing && _state != PlaybackState.buffering) {
+          _state = PlaybackState.stopped;
+        }
       }
       notifyListeners();
     });
