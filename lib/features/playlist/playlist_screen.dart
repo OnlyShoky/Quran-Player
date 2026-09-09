@@ -164,6 +164,7 @@ class PlaylistScreen extends StatelessWidget {
                         _PlaylistItemTile(
                           index: index,
                           surahNameEn: surah.nameEn,
+                          surahSubtitle: surah.localizedTranslation(context),
                           surahNameAr: surah.nameAr,
                           surahId: surah.id,
                           isPlaying: isCurrentlyPlaying,
@@ -268,6 +269,7 @@ class PlaylistScreen extends StatelessWidget {
 class _PlaylistItemTile extends StatelessWidget {
   final int index;
   final String surahNameEn;
+  final String? surahSubtitle;
   final String surahNameAr;
   final int surahId;
   final bool isPlaying;
@@ -276,6 +278,7 @@ class _PlaylistItemTile extends StatelessWidget {
   const _PlaylistItemTile({
     required this.index,
     required this.surahNameEn,
+    this.surahSubtitle,
     required this.surahNameAr,
     required this.surahId,
     required this.isPlaying,
@@ -310,11 +313,26 @@ class _PlaylistItemTile extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                surahNameEn,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  color: isPlaying ? theme.colorScheme.primary : null,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    surahNameEn,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: isPlaying ? theme.colorScheme.primary : null,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (surahSubtitle != null)
+                    Text(
+                      surahSubtitle!,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                ],
               ),
             ),
             Text(

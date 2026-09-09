@@ -50,6 +50,8 @@ class SurahTile extends StatelessWidget {
         ? (isDark ? const Color(0xFF8EC9A8) : const Color(0xFF2D6B4A))
         : (isDark ? const Color(0xFFC4976A) : const Color(0xFF6B4A1E));
 
+    final isNarrow = MediaQuery.sizeOf(context).width <= 600;
+
     return InkWell(
       onTap: () => _playSurah(context),
       borderRadius: BorderRadius.circular(12),
@@ -89,68 +91,111 @@ class SurahTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Row 1: Surah Name + Tag
                   Row(
                     children: [
-                      Expanded(
-                        child: Text(
-                          surah.nameEn,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            color: isCurrentlyPlaying ? theme.colorScheme.primary : null,
-                            fontWeight: isCurrentlyPlaying ? FontWeight.w700 : null,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 5, vertical: 1.5),
-                          decoration: BoxDecoration(
-                            color: tagBg,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
+                      if (isNarrow)
+                        Flexible(
                           child: Text(
-                            isMeccan ? context.tr('meccan') : context.tr('medinan'),
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: tagFg,
-                              fontSize: 10,
+                            surah.nameEn,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              color: isCurrentlyPlaying
+                                  ? theme.colorScheme.primary
+                                  : null,
+                              fontWeight:
+                                  isCurrentlyPlaying ? FontWeight.w700 : null,
                             ),
-                            maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
+                        )
+                      else
+                        Text(
+                          surah.nameEn,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            color: isCurrentlyPlaying
+                                ? theme.colorScheme.primary
+                                : null,
+                            fontWeight:
+                                isCurrentlyPlaying ? FontWeight.w700 : null,
+                          ),
+                        ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: tagBg,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          isMeccan
+                              ? context.tr('meccan')
+                              : context.tr('medinan'),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: tagFg,
+                            fontSize: 10,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          surah.nameEnTranslation,
+
+                  // Row 2: Translation + Verses count
+                  if (isNarrow)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            surah.localizedTranslation(context),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: isDark
+                                  ? AppColors.mutedDark
+                                  : AppColors.mutedLight,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        SizedBox(
+                          width: 72,
+                          child: Text(
+                            '· ${context.tr('verses_count', {'count': '${surah.ayahCount}'})}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: isDark
+                                  ? AppColors.mutedDark
+                                  : AppColors.mutedLight,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    Row(
+                      children: [
+                        Text(
+                          surah.localizedTranslation(context),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: isDark
                                 ? AppColors.mutedDark
                                 : AppColors.mutedLight,
                           ),
-                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
+                        const SizedBox(width: 8),
+                        Text(
                           '· ${context.tr('verses_count', {'count': '${surah.ayahCount}'})}',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: isDark
                                 ? AppColors.mutedDark
                                 : AppColors.mutedLight,
                           ),
-                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
                 ],
               ),
             ),
@@ -158,14 +203,30 @@ class SurahTile extends StatelessWidget {
             const SizedBox(width: 8),
 
             // --- Arabic name ---
-            Text(
-              surah.nameAr,
-              style: GoogleFonts.amiri(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: theme.colorScheme.primary,
+            if (isNarrow)
+              SizedBox(
+                width: 70,
+                child: Text(
+                  surah.nameAr,
+                  textAlign: TextAlign.end,
+                  style: GoogleFonts.amiri(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.primary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.visible,
+                ),
+              )
+            else
+              Text(
+                surah.nameAr,
+                style: GoogleFonts.amiri(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.primary,
+                ),
               ),
-            ),
             const SizedBox(width: 8),
 
             // --- Add/remove button ---

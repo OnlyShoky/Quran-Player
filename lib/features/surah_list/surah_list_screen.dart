@@ -26,6 +26,7 @@ class SurahListScreen extends StatefulWidget {
 class _SurahListScreenState extends State<SurahListScreen> {
   final _searchController = TextEditingController();
   final _juzController = TextEditingController();
+  final _hizbController = TextEditingController();
   final _fromController = TextEditingController();
   final _toController = TextEditingController();
   final GlobalKey _viewModeButtonKey = GlobalKey();
@@ -37,12 +38,14 @@ class _SurahListScreenState extends State<SurahListScreen> {
 
   bool get _hasActiveFilters =>
       _juzController.text.trim().isNotEmpty ||
+      _hizbController.text.trim().isNotEmpty ||
       _fromController.text.trim().isNotEmpty ||
       _toController.text.trim().isNotEmpty;
 
   void _clearFilters() {
     setState(() {
       _juzController.clear();
+      _hizbController.clear();
       _fromController.clear();
       _toController.clear();
     });
@@ -59,6 +62,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
     _removeTutorialOverlay();
     _searchController.dispose();
     _juzController.dispose();
+    _hizbController.dispose();
     _fromController.dispose();
     _toController.dispose();
     super.dispose();
@@ -129,12 +133,24 @@ class _SurahListScreenState extends State<SurahListScreen> {
     }
 
     final int? juz = int.tryParse(_juzController.text.trim());
+    final int? hizb = int.tryParse(_hizbController.text.trim());
     final int? from = int.tryParse(_fromController.text.trim());
     final int? to = int.tryParse(_toController.text.trim());
+
+    final isJuzActive = _juzController.text.trim().isNotEmpty;
+    final isHizbActive = _hizbController.text.trim().isNotEmpty;
+    final isFromActive = _fromController.text.trim().isNotEmpty;
+    final isToActive = _toController.text.trim().isNotEmpty;
 
     final Set<int>? juzSurahIds = (juz != null && juz >= 1 && juz <= 30)
         ? SurahFilterData.surahIdsForJuz(juz)
         : null;
+    final Set<int>? hizbSurahIds = (hizb != null && hizb >= 1 && hizb <= 60)
+        ? SurahFilterData.surahIdsForHizb(hizb)
+        : null;
+
+    final bool isFromValid = from != null && from >= 1 && from <= 114;
+    final bool isToValid = to != null && to >= 1 && to <= 114;
 
     final baseFiltered = surahs.where((s) {
       // 1. Text query filter
@@ -142,24 +158,33 @@ class _SurahListScreenState extends State<SurahListScreen> {
         final q = _query.toLowerCase();
         final matchesText = s.nameEn.toLowerCase().contains(q) ||
             s.nameEnTranslation.toLowerCase().contains(q) ||
+            s.localizedTranslation(context).toLowerCase().contains(q) ||
             s.nameAr.contains(q) ||
             '${s.id}'.contains(q);
         if (!matchesText) return false;
       }
 
-      // 2. Juz filter: if a valid Juz number is entered (1-30), show only surahs in that Juz
-      if (juzSurahIds != null && !juzSurahIds.contains(s.id)) {
-        return false;
+      // 2. Juz filter: if active, must be in that Juz (invalid number yields no match)
+      if (isJuzActive) {
+        if (juzSurahIds == null || !juzSurahIds.contains(s.id)) return false;
       }
 
-      // 3. From / To surah range filter
-      if (from != null && to != null) {
+      // 3. Hizb filter: if active, must be in that Hizb (invalid number yields no match)
+      if (isHizbActive) {
+        if (hizbSurahIds == null || !hizbSurahIds.contains(s.id)) return false;
+      }
+
+      // 4. From / To surah range filter (invalid number yields no match)
+      if (isFromActive && !isFromValid) return false;
+      if (isToActive && !isToValid) return false;
+
+      if (isFromValid && isToValid) {
         final minId = math.min(from, to);
         final maxId = math.max(from, to);
         if (s.id < minId || s.id > maxId) return false;
-      } else if (from != null) {
+      } else if (isFromValid) {
         if (s.id < from) return false;
-      } else if (to != null) {
+      } else if (isToValid) {
         if (s.id > to) return false;
       }
 
@@ -228,6 +253,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
           ),
 
           // --- Search bar & inline filter boxes ---
+          // --- Search bar & filter button ---
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
@@ -247,9 +273,18 @@ class _SurahListScreenState extends State<SurahListScreen> {
                               : AppColors.mutedLight,
                         ),
                         prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                        prefixIconConstraints: const BoxConstraints(
+                          minWidth: 38,
+                          minHeight: 46,
+                        ),
                         suffixIcon: _query.isNotEmpty
                             ? IconButton(
-                                icon: const Icon(Icons.clear_rounded, size: 16),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(
+                                  minWidth: 32,
+                                  minHeight: 46,
+                                ),
+                                icon: const Icon(Icons.clear_rounded, size: 18),
                                 tooltip: context.tr('clear_all'),
                                 onPressed: () {
                                   _searchController.clear();
@@ -257,16 +292,20 @@ class _SurahListScreenState extends State<SurahListScreen> {
                                 },
                               )
                             : null,
+                        suffixIconConstraints: const BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 46,
+                        ),
                         filled: true,
                         fillColor: isDark
                             ? AppColors.surfaceContainerDark
                             : AppColors.surfaceContainerLight,
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(14),
                           borderSide: BorderSide.none,
                         ),
                         contentPadding: const EdgeInsets.symmetric(
-                          vertical: 10,
+                          vertical: 12,
                           horizontal: 8,
                         ),
                         isDense: true,
@@ -274,67 +313,29 @@ class _SurahListScreenState extends State<SurahListScreen> {
                     ),
                   ),
 
-                  // Small filter boxes next to search bar
-                  if (_showFilters) ...[
-                    const SizedBox(width: 6),
-                    _buildSmallFilterBox(
-                      controller: _juzController,
-                      hint: 'Juz',
-                      tooltip: '${context.tr('filter_juz')} (1 - 30)',
-                      width: 42,
-                      maxLength: 2,
-                      isDark: isDark,
-                      theme: theme,
-                    ),
-                    const SizedBox(width: 4),
-                    _buildSmallFilterBox(
-                      controller: _fromController,
-                      hint: '1',
-                      tooltip: '${context.tr('filter_from')} (1 - 114)',
-                      width: 40,
-                      maxLength: 3,
-                      isDark: isDark,
-                      theme: theme,
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 2),
-                      child: Text(
-                        '–',
-                        style: TextStyle(
-                          color: isDark
-                              ? AppColors.mutedDark
-                              : AppColors.mutedLight,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    _buildSmallFilterBox(
-                      controller: _toController,
-                      hint: '114',
-                      tooltip: '${context.tr('filter_to')} (1 - 114)',
-                      width: 40,
-                      maxLength: 3,
-                      isDark: isDark,
-                      theme: theme,
-                    ),
-                  ],
-
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 8),
 
                   // Filter toggle button
                   Container(
-                    height: 42,
-                    width: 42,
+                    height: 46,
+                    width: 46,
                     decoration: BoxDecoration(
                       color: (_showFilters || _hasActiveFilters)
                           ? theme.colorScheme.primary.withValues(alpha: 0.15)
                           : (isDark
                               ? AppColors.surfaceContainerDark
                               : AppColors.surfaceContainerLight),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
+                      border: (_showFilters || _hasActiveFilters)
+                          ? Border.all(color: theme.colorScheme.primary, width: 1.5)
+                          : null,
                     ),
                     child: IconButton(
                       padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 46,
+                        minHeight: 46,
+                      ),
                       icon: Badge(
                         isLabelVisible: _hasActiveFilters,
                         smallSize: 8,
@@ -360,6 +361,94 @@ class _SurahListScreenState extends State<SurahListScreen> {
               ),
             ),
           ),
+
+          // --- Dedicated Expandable Filter Row (when _showFilters is true) ---
+          if (_showFilters)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 2, 16, 6),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildSmallFilterBox(
+                        controller: _juzController,
+                        hint: 'Juz',
+                        tooltip: '${context.tr('filter_juz')} (1 - 30)',
+                        minVal: 1,
+                        maxVal: 30,
+                        maxLength: 2,
+                        width: 64,
+                        isDark: isDark,
+                        theme: theme,
+                      ),
+                      const SizedBox(width: 8),
+                      _buildSmallFilterBox(
+                        controller: _hizbController,
+                        hint: 'Hzb',
+                        tooltip: '${context.tr('filter_hizb')} (1 - 60)',
+                        minVal: 1,
+                        maxVal: 60,
+                        maxLength: 2,
+                        width: 64,
+                        isDark: isDark,
+                        theme: theme,
+                      ),
+                      const SizedBox(width: 8),
+                      _buildSmallFilterBox(
+                        controller: _fromController,
+                        hint: '1',
+                        tooltip: '${context.tr('filter_from')} (1 - 114)',
+                        minVal: 1,
+                        maxVal: 114,
+                        maxLength: 3,
+                        width: 64,
+                        isDark: isDark,
+                        theme: theme,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Text(
+                          '–',
+                          style: TextStyle(
+                            color: isDark
+                                ? AppColors.mutedDark
+                                : AppColors.mutedLight,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                      _buildSmallFilterBox(
+                        controller: _toController,
+                        hint: '114',
+                        tooltip: '${context.tr('filter_to')} (1 - 114)',
+                        minVal: 1,
+                        maxVal: 114,
+                        maxLength: 3,
+                        width: 64,
+                        isDark: isDark,
+                        theme: theme,
+                      ),
+                      if (_hasActiveFilters) ...[
+                        const SizedBox(width: 6),
+                        IconButton(
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                          icon: Icon(
+                            Icons.cancel_rounded,
+                            size: 20,
+                            color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
+                          ),
+                          tooltip: context.tr('filter_clear'),
+                          onPressed: _clearFilters,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
 
           // --- Surah count & quick reverse ---
           SliverToBoxAdapter(
@@ -535,67 +624,73 @@ class _SurahListScreenState extends State<SurahListScreen> {
     required TextEditingController controller,
     required String hint,
     required String tooltip,
-    required double width,
+    required int minVal,
+    required int maxVal,
     required int maxLength,
+    double width = 64,
     required bool isDark,
     required ThemeData theme,
   }) {
-    final hasValue = controller.text.trim().isNotEmpty;
+    final text = controller.text.trim();
+    final hasValue = text.isNotEmpty;
+    final val = int.tryParse(text);
+    final bool isValid = hasValue && val != null && val >= minVal && val <= maxVal;
+    final bool isInvalid = hasValue && !isValid;
+
+    final Color? stateColor = isInvalid
+        ? (isDark ? const Color(0xFFEF4444) : const Color(0xFFDC2626))
+        : (isValid ? theme.colorScheme.primary : null);
+
+    final Color fillColor = stateColor != null
+        ? stateColor.withValues(alpha: 0.14)
+        : (isDark
+            ? AppColors.surfaceContainerDark
+            : AppColors.surfaceContainerLight);
+
+    final BorderSide borderSide = stateColor != null
+        ? BorderSide(color: stateColor, width: 1.5)
+        : BorderSide.none;
+
     return Tooltip(
       message: tooltip,
       child: SizedBox(
         width: width,
-        height: 42,
+        height: 44,
         child: TextField(
           controller: controller,
           keyboardType: TextInputType.number,
           textAlign: TextAlign.center,
+          textAlignVertical: TextAlignVertical.center,
           maxLength: maxLength,
-          style: theme.textTheme.bodySmall?.copyWith(
+          style: theme.textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.w600,
-            color: hasValue ? theme.colorScheme.primary : null,
+            color: stateColor,
           ),
           onChanged: (_) => setState(() {}),
           decoration: InputDecoration(
             hintText: hint,
             counterText: '',
-            hintStyle: theme.textTheme.labelSmall?.copyWith(
+            hintStyle: theme.textTheme.labelMedium?.copyWith(
               color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
-              fontSize: 11,
+              fontSize: 12,
             ),
             filled: true,
-            fillColor: hasValue
-                ? theme.colorScheme.primary.withValues(alpha: 0.12)
-                : (isDark
-                    ? AppColors.surfaceContainerDark
-                    : AppColors.surfaceContainerLight),
+            fillColor: fillColor,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: hasValue
-                  ? BorderSide(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.5),
-                    )
-                  : BorderSide.none,
+              borderRadius: BorderRadius.circular(12),
+              borderSide: borderSide,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: hasValue
-                  ? BorderSide(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.5),
-                    )
-                  : BorderSide.none,
+              borderRadius: BorderRadius.circular(12),
+              borderSide: borderSide,
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(
-                color: theme.colorScheme.primary,
-                width: 1.5,
-              ),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: stateColor != null
+                  ? BorderSide(color: stateColor, width: 2)
+                  : BorderSide(color: theme.colorScheme.primary, width: 1.5),
             ),
-            contentPadding: const EdgeInsets.symmetric(
-              vertical: 10,
-              horizontal: 2,
-            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
             isDense: true,
           ),
         ),

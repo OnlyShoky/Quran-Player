@@ -151,7 +151,7 @@ class PlayerScreen extends StatelessWidget {
             // --- Translation ---
             const SizedBox(height: 4),
             Text(
-              surah.nameEnTranslation,
+              surah.localizedTranslation(context),
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
               ),
