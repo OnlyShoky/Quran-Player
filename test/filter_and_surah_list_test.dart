@@ -512,6 +512,113 @@ void main() {
       final arabicFinder = find.text(surah1.nameAr);
       expect(arabicFinder, findsOneWidget);
     });
+
+    testWidgets('Filter fields are mutually exclusive: typing in one clears contradictory fields', (tester) async {
+      tester.view.physicalSize = const Size(360, 780);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(createTestWidget(const SurahListScreen()));
+      await tester.pumpAndSettle();
+
+      // Open filter boxes
+      await tester.tap(find.byTooltip('Filters'));
+      await tester.pumpAndSettle();
+
+      final juzFinder = find.widgetWithText(TextField, 'Juz');
+      final hzbFinder = find.widgetWithText(TextField, 'Hzb');
+      final fromFinder = find.widgetWithText(TextField, '1');
+      final toFinder = find.widgetWithText(TextField, '114');
+
+      // 1. Enter Juz 30
+      await tester.enterText(juzFinder, '30');
+      await tester.pumpAndSettle();
+      expect(tester.widget<TextField>(juzFinder).controller?.text, '30');
+
+      // 2. Now enter Hizb 5 - should clear Juz, From, To
+      await tester.enterText(hzbFinder, '5');
+      await tester.pumpAndSettle();
+      expect(tester.widget<TextField>(hzbFinder).controller?.text, '5');
+      expect(tester.widget<TextField>(juzFinder).controller?.text, '');
+      expect(tester.widget<TextField>(fromFinder).controller?.text, '');
+      expect(tester.widget<TextField>(toFinder).controller?.text, '');
+
+      // 3. Now enter From 10 and To 30 - should clear Hizb and Juz, but keep From and To
+      await tester.enterText(fromFinder, '10');
+      await tester.pumpAndSettle();
+      expect(tester.widget<TextField>(fromFinder).controller?.text, '10');
+      expect(tester.widget<TextField>(hzbFinder).controller?.text, '');
+      expect(tester.widget<TextField>(juzFinder).controller?.text, '');
+
+      await tester.enterText(toFinder, '30');
+      await tester.pumpAndSettle();
+      expect(tester.widget<TextField>(fromFinder).controller?.text, '10');
+      expect(tester.widget<TextField>(toFinder).controller?.text, '30');
+      expect(tester.widget<TextField>(hzbFinder).controller?.text, '');
+      expect(tester.widget<TextField>(juzFinder).controller?.text, '');
+
+      // 4. Now enter Juz 20 - should clear From and To
+      await tester.enterText(juzFinder, '20');
+      await tester.pumpAndSettle();
+      expect(tester.widget<TextField>(juzFinder).controller?.text, '20');
+      expect(tester.widget<TextField>(fromFinder).controller?.text, '');
+      expect(tester.widget<TextField>(toFinder).controller?.text, '');
+      expect(tester.widget<TextField>(hzbFinder).controller?.text, '');
+    });
+
+    testWidgets('Add all with active filter adds only filtered surahs and not all 114', (tester) async {
+      tester.view.physicalSize = const Size(360, 780);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      final playlistProvider = PlaylistProvider();
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider(create: (_) => SettingsProvider()),
+            ChangeNotifierProvider(create: (_) => ViewModeProvider()),
+            ChangeNotifierProvider.value(value: playlistProvider),
+            ChangeNotifierProvider(create: (_) => PlayerProvider()),
+          ],
+          child: const MaterialApp(
+            locale: Locale('en'),
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: SurahListScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Open filters and enter Juz 30 (which has 37 surahs)
+      await tester.tap(find.byTooltip('Filters'));
+      await tester.pumpAndSettle();
+
+      final juzFinder = find.widgetWithText(TextField, 'Juz');
+      await tester.enterText(juzFinder, '30');
+      await tester.pumpAndSettle();
+
+      // Floating action button should now show "Add all (37)"
+      final addAllFilteredFinder = find.text('Add all (37)');
+      expect(addAllFilteredFinder, findsOneWidget);
+
+      // Tap "Add all (37)"
+      await tester.tap(addAllFilteredFinder);
+      await tester.pumpAndSettle(const Duration(seconds: 4));
+
+      // Verify ONLY the 37 surahs of Juz 30 were added, NOT all 114
+      expect(playlistProvider.items.length, 37);
+      expect(playlistProvider.containsSurah(78), isTrue); // An-Naba (in Juz 30)
+      expect(playlistProvider.containsSurah(114), isTrue); // An-Nas (in Juz 30)
+      expect(playlistProvider.containsSurah(1), isFalse); // Al-Fatihah (NOT in Juz 30)
+      expect(playlistProvider.containsSurah(2), isFalse); // Al-Baqarah (NOT in Juz 30)
+    });
   });
 }
 

@@ -167,7 +167,7 @@ class PlaylistProvider extends ChangeNotifier {
     ensureSurahInPlaylist(surahId);
   }
 
-  void addAllSurahs() {
+  int addSurahs(Iterable<int> surahIds) {
     if (_selectedReciterId == null) {
       if (_reciters.isNotEmpty) {
         _selectedReciterId = _reciters.first.id;
@@ -176,15 +176,24 @@ class PlaylistProvider extends ChangeNotifier {
       }
     }
 
-    for (final surah in MockData.surahs) {
-      if (!containsSurah(surah.id)) {
+    int addedCount = 0;
+    for (final id in surahIds) {
+      if (!containsSurah(id)) {
         _items.add(PlaylistItem(
-          surahId: surah.id,
+          surahId: id,
           reciterId: _selectedReciterId!,
         ));
+        addedCount++;
       }
     }
-    notifyListeners();
+    if (addedCount > 0) {
+      notifyListeners();
+    }
+    return addedCount;
+  }
+
+  void addAllSurahs() {
+    addSurahs(MockData.surahs.map((s) => s.id));
   }
 
   PlaylistItem? removeSurah(int surahId) {

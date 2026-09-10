@@ -53,6 +53,36 @@ class _SurahListScreenState extends State<SurahListScreen> {
     });
   }
 
+  void _onJuzChanged(String val) {
+    if (val.trim().isNotEmpty) {
+      if (_hizbController.text.isNotEmpty) _hizbController.clear();
+      if (_fromController.text.isNotEmpty) _fromController.clear();
+      if (_toController.text.isNotEmpty) _toController.clear();
+    }
+  }
+
+  void _onHizbChanged(String val) {
+    if (val.trim().isNotEmpty) {
+      if (_juzController.text.isNotEmpty) _juzController.clear();
+      if (_fromController.text.isNotEmpty) _fromController.clear();
+      if (_toController.text.isNotEmpty) _toController.clear();
+    }
+  }
+
+  void _onFromChanged(String val) {
+    if (val.trim().isNotEmpty) {
+      if (_juzController.text.isNotEmpty) _juzController.clear();
+      if (_hizbController.text.isNotEmpty) _hizbController.clear();
+    }
+  }
+
+  void _onToChanged(String val) {
+    if (val.trim().isNotEmpty) {
+      if (_juzController.text.isNotEmpty) _juzController.clear();
+      if (_hizbController.text.isNotEmpty) _hizbController.clear();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -320,6 +350,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
                       width: 40,
                       isDark: isDark,
                       theme: theme,
+                      onChanged: _onJuzChanged,
                     ),
                     const SizedBox(width: 3),
                     _buildSmallFilterBox(
@@ -332,6 +363,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
                       width: 40,
                       isDark: isDark,
                       theme: theme,
+                      onChanged: _onHizbChanged,
                     ),
                     const SizedBox(width: 3),
                     _buildSmallFilterBox(
@@ -344,6 +376,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
                       width: 38,
                       isDark: isDark,
                       theme: theme,
+                      onChanged: _onFromChanged,
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 1),
@@ -368,6 +401,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
                       width: 38,
                       isDark: isDark,
                       theme: theme,
+                      onChanged: _onToChanged,
                     ),
                   ],
 
@@ -375,8 +409,8 @@ class _SurahListScreenState extends State<SurahListScreen> {
 
                   // Filter toggle button
                   Container(
-                    height: 44,
-                    width: 44,
+                    height: 46,
+                    width: 46,
                     decoration: BoxDecoration(
                       color: (_showFilters || _hasActiveFilters)
                           ? theme.colorScheme.primary.withValues(alpha: 0.15)
@@ -580,16 +614,41 @@ class _SurahListScreenState extends State<SurahListScreen> {
           const SliverToBoxAdapter(child: SizedBox(height: 80)),
         ],
       ),
-      floatingActionButton: playlist.items.length < surahs.length
-          ? FloatingActionButton.extended(
-              onPressed: () {
-                playlist.addAllSurahs();
-                showAppSnackBar(context, 'All 114 surahs added to playlist');
-              },
-              icon: const Icon(Icons.playlist_add_rounded),
-              label: const Text('Add all'),
-            )
-          : null,
+      floatingActionButton: () {
+        final isFiltered = _hasActiveFilters || _query.isNotEmpty;
+        final unaddedFilteredCount =
+            filtered.where((s) => !playlist.containsSurah(s.id)).length;
+        final canAddAll = playlist.items.length < surahs.length;
+
+        if (isFiltered && unaddedFilteredCount > 0) {
+          return FloatingActionButton.extended(
+            heroTag: 'add_filtered',
+            onPressed: () {
+              final added = playlist.addSurahs(filtered.map((s) => s.id));
+              showAppSnackBar(
+                context,
+                '$added surah${added == 1 ? '' : 's'} added to playlist',
+              );
+            },
+            icon: const Icon(Icons.playlist_add_check_rounded),
+            label: Text('Add all (${filtered.length})'),
+          );
+        }
+
+        if (canAddAll) {
+          return FloatingActionButton.extended(
+            heroTag: 'add_all',
+            onPressed: () {
+              playlist.addAllSurahs();
+              showAppSnackBar(context, 'All 114 surahs added to playlist');
+            },
+            icon: const Icon(Icons.playlist_add_rounded),
+            label: const Text('Add all'),
+          );
+        }
+
+        return null;
+      }(),
     );
   }
 
@@ -603,6 +662,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
     double width = 64,
     required bool isDark,
     required ThemeData theme,
+    ValueChanged<String>? onChanged,
   }) {
     final text = controller.text.trim();
     final hasValue = text.isNotEmpty;
@@ -629,7 +689,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
       message: tooltip,
       child: SizedBox(
         width: width,
-        height: 44,
+        height: 46,
         child: TextField(
           controller: controller,
           keyboardType: TextInputType.number,
@@ -641,7 +701,10 @@ class _SurahListScreenState extends State<SurahListScreen> {
             color: stateColor,
             fontSize: 13,
           ),
-          onChanged: (_) => setState(() {}),
+          onChanged: (v) {
+            onChanged?.call(v);
+            setState(() {});
+          },
           decoration: InputDecoration(
             hintText: hint,
             counterText: '',

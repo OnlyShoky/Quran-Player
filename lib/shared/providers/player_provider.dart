@@ -33,6 +33,7 @@ class PlayerProvider extends ChangeNotifier {
 
   bool _isDismissed = false;
   int _lastKnownPlaylistLength = 0;
+  bool _isHandlingCompletion = false;
 
   PlaybackState get state => _state;
   int get currentIndex => _currentIndex;
@@ -136,6 +137,10 @@ class PlayerProvider extends ChangeNotifier {
       final playing = playerState.playing;
       final processingState = playerState.processingState;
 
+      if (processingState != ProcessingState.completed) {
+        _isHandlingCompletion = false;
+      }
+
       if (processingState == ProcessingState.loading ||
           processingState == ProcessingState.buffering) {
         _state = PlaybackState.buffering;
@@ -144,15 +149,12 @@ class PlayerProvider extends ChangeNotifier {
       } else if (playing && processingState != ProcessingState.completed) {
         _state = PlaybackState.playing;
       } else if (processingState == ProcessingState.completed) {
-        // Handle track completion: call _onTrackCompleted BEFORE setting
-        // stopped state so that 'next' action can transition directly
-        // to the next track without broadcasting a stopped state first.
-        _position = Duration.zero;
-        _progress = 0.0;
-        _onTrackCompleted();
-        // If _onTrackCompleted didn't start a new track, set stopped
-        if (_state != PlaybackState.playing && _state != PlaybackState.buffering) {
-          _state = PlaybackState.stopped;
+        // Handle track completion once per track completion event
+        if (!_isHandlingCompletion) {
+          _isHandlingCompletion = true;
+          _position = Duration.zero;
+          _progress = 0.0;
+          _onTrackCompleted();
         }
       }
       notifyListeners();
@@ -189,15 +191,27 @@ class PlayerProvider extends ChangeNotifier {
             reciter: _currentReciter!,
             index: _currentIndex,
           );
+        } else {
+          _state = PlaybackState.stopped;
+          notifyListeners();
         }
         break;
       case PlaybackCompletionAction.stop:
+        _state = PlaybackState.stopped;
+        notifyListeners();
         break;
       case PlaybackCompletionAction.next:
         if (_playlistProvider != null && _playlistProvider!.items.isNotEmpty) {
           if (_currentIndex < _playlistProvider!.items.length - 1) {
             playIndex(_currentIndex + 1);
+          } else {
+            // End of playlist reached
+            _state = PlaybackState.stopped;
+            notifyListeners();
           }
+        } else {
+          _state = PlaybackState.stopped;
+          notifyListeners();
         }
         break;
     }
@@ -231,14 +245,21 @@ class PlayerProvider extends ChangeNotifier {
       _state = PlaybackState.buffering;
       notifyListeners();
 
-      // Reset previous playback and set new AudioSource
-      await _audioPlayer.stop();
+      // Setting a new audio source automatically stops previous playback and prepares the new source
       await _audioPlayer.setAudioSource(
         AudioSource.uri(Uri.parse(url)),
         preload: true,
       );
       await _audioPlayer.play();
     } catch (e) {
+      // If loading was cancelled/interrupted because another track was requested, do not report an error
+      final errStr = e.toString().toLowerCase();
+      if (errStr.contains('loading interrupted') ||
+          errStr.contains('interrupted') ||
+          errStr.contains('abort')) {
+        debugPrint('Audio loading interrupted (ignored): $e');
+        return;
+      }
       _errorMessage = 'Failed to load audio: $e';
       _state = PlaybackState.stopped;
       notifyListeners();
