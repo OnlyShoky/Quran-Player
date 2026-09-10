@@ -291,14 +291,20 @@ class _SurahListScreenState extends State<SurahListScreen> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   // Main search field
                   Expanded(
                     child: TextField(
                       controller: _searchController,
+                      textAlignVertical: TextAlignVertical.center,
                       onChanged: (v) => setState(() => _query = v.trim()),
                       style: theme.textTheme.bodyMedium,
                       decoration: InputDecoration(
+                        constraints: const BoxConstraints(
+                          minHeight: 46,
+                          maxHeight: 46,
+                        ),
                         hintText: context.tr('search_surahs'),
                         hintStyle: theme.textTheme.bodyMedium?.copyWith(
                           color: isDark
@@ -308,7 +314,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
                         prefixIcon: const Icon(Icons.search_rounded, size: 20),
                         prefixIconConstraints: const BoxConstraints(
                           minWidth: 38,
-                          minHeight: 44,
+                          minHeight: 46,
                         ),
                         suffixIcon: _query.isNotEmpty
                             ? IconButton(
@@ -616,8 +622,9 @@ class _SurahListScreenState extends State<SurahListScreen> {
       ),
       floatingActionButton: () {
         final isFiltered = _hasActiveFilters || _query.isNotEmpty;
-        final unaddedFilteredCount =
-            filtered.where((s) => !playlist.containsSurah(s.id)).length;
+        final unaddedFilteredCount = filtered
+            .where((s) => !playlist.containsSurah(s.id))
+            .length;
         final canAddAll = playlist.items.length < surahs.length;
 
         if (isFiltered && unaddedFilteredCount > 0) {
@@ -706,6 +713,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
             setState(() {});
           },
           decoration: InputDecoration(
+            constraints: const BoxConstraints(minHeight: 46, maxHeight: 46),
             hintText: hint,
             counterText: '',
             hintStyle: theme.textTheme.labelMedium?.copyWith(
@@ -728,7 +736,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
                   ? BorderSide(color: stateColor, width: 2)
                   : BorderSide(color: theme.colorScheme.primary, width: 1.5),
             ),
-            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(vertical: 19),
             isDense: true,
           ),
         ),

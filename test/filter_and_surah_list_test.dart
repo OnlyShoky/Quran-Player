@@ -47,7 +47,11 @@ void main() {
       for (int i = 1; i <= 30; i++) {
         final surahs = SurahFilterData.surahIdsForJuz(i);
         expect(surahs, isNotNull, reason: 'Juz $i should not be null');
-        expect(surahs!.isNotEmpty, isTrue, reason: 'Juz $i should contain surahs');
+        expect(
+          surahs!.isNotEmpty,
+          isTrue,
+          reason: 'Juz $i should contain surahs',
+        );
       }
     });
 
@@ -55,7 +59,11 @@ void main() {
       for (int i = 1; i <= 60; i++) {
         final surahs = SurahFilterData.surahIdsForHizb(i);
         expect(surahs, isNotNull, reason: 'Hizb $i should not be null');
-        expect(surahs!.isNotEmpty, isTrue, reason: 'Hizb $i should contain surahs');
+        expect(
+          surahs!.isNotEmpty,
+          isTrue,
+          reason: 'Hizb $i should contain surahs',
+        );
       }
     });
 
@@ -100,27 +108,32 @@ void main() {
   });
 
   group('SurahTile 360px Width Overflow Test', () {
-    testWidgets('renders surah tile on 360px wide screen without overflow', (tester) async {
+    testWidgets('renders surah tile on 360px wide screen without overflow', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(360, 780);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
 
       // Surah with longest English name and translation
-      final testSurah = MockData.surahs.firstWhere((s) => s.id == 2); // Al-Baqarah, 286 verses
+      final testSurah = MockData.surahs.firstWhere(
+        (s) => s.id == 2,
+      ); // Al-Baqarah, 286 verses
 
       await tester.pumpWidget(
         createTestWidget(
           Scaffold(
-            body: SizedBox(
-              width: 360,
-              child: SurahTile(surah: testSurah),
-            ),
+            body: SizedBox(width: 360, child: SurahTile(surah: testSurah)),
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull, reason: 'No layout overflow exceptions should occur');
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: 'No layout overflow exceptions should occur',
+      );
       expect(find.text('Al-Baqarah'), findsOneWidget);
     });
   });
@@ -154,7 +167,9 @@ void main() {
       expect(find.text('Reverse order'), findsNothing);
     });
 
-    testWidgets('Juz filter shows only surahs in specified Juz', (tester) async {
+    testWidgets('Juz filter shows only surahs in specified Juz', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(360, 780);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
@@ -204,7 +219,9 @@ void main() {
       expect(find.text('Al-Fatihah'), findsNothing); // 1
     });
 
-    testWidgets('Reverse order button reverses the surah list order', (tester) async {
+    testWidgets('Reverse order button reverses the surah list order', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(360, 780);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
@@ -253,7 +270,9 @@ void main() {
       expect(find.text('114 chapters'), findsOneWidget);
     });
 
-    testWidgets('Hizb filter shows only surahs in specified Hizb', (tester) async {
+    testWidgets('Hizb filter shows only surahs in specified Hizb', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(360, 780);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
@@ -276,35 +295,44 @@ void main() {
       expect(find.text('Al-Fatihah'), findsNothing);
     });
 
-    testWidgets('Filter boxes have uniform height (46.0) matching search bar and button without overflow', (tester) async {
-      tester.view.physicalSize = const Size(360, 780);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+    testWidgets(
+      'Filter boxes have uniform height (46.0) matching search bar and button without overflow',
+      (tester) async {
+        tester.view.physicalSize = const Size(360, 780);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
 
-      await tester.pumpWidget(createTestWidget(const SurahListScreen()));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(createTestWidget(const SurahListScreen()));
+        await tester.pumpAndSettle();
 
-      // Open filter boxes
-      await tester.tap(find.byTooltip('Filters'));
-      await tester.pumpAndSettle();
+        // Open filter boxes
+        await tester.tap(find.byTooltip('Filters'));
+        await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull, reason: 'No layout overflow exceptions should occur on 360px width');
-
-      // Verify all 4 filter box SizedBox containers have height: 46.0 matching the search row and button
-      final juzFinder = find.widgetWithText(TextField, 'Juz');
-      final hzbFinder = find.widgetWithText(TextField, 'Hzb');
-      final fromFinder = find.widgetWithText(TextField, '1');
-      final toFinder = find.widgetWithText(TextField, '114');
-
-      for (final finder in [juzFinder, hzbFinder, fromFinder, toFinder]) {
-        final sizedBox = tester.widget<SizedBox>(
-          find.ancestor(of: finder, matching: find.byType(SizedBox)).first,
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: 'No layout overflow exceptions should occur on 360px width',
         );
-        expect(sizedBox.height, 46.0);
-      }
-    });
 
-    testWidgets('Filter boxes indicate green when valid and red when invalid', (tester) async {
+        // Verify all 4 filter box SizedBox containers have height: 46.0 matching the search row and button
+        final juzFinder = find.widgetWithText(TextField, 'Juz');
+        final hzbFinder = find.widgetWithText(TextField, 'Hzb');
+        final fromFinder = find.widgetWithText(TextField, '1');
+        final toFinder = find.widgetWithText(TextField, '114');
+
+        for (final finder in [juzFinder, hzbFinder, fromFinder, toFinder]) {
+          final sizedBox = tester.widget<SizedBox>(
+            find.ancestor(of: finder, matching: find.byType(SizedBox)).first,
+          );
+          expect(sizedBox.height, 46.0);
+        }
+      },
+    );
+
+    testWidgets('Filter boxes indicate green when valid and red when invalid', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(360, 780);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
@@ -335,7 +363,7 @@ void main() {
       juzWidget = tester.widget<TextField>(juzField);
       expect(
         juzWidget.style?.color == const Color(0xFFDC2626) ||
-        juzWidget.style?.color == const Color(0xFFEF4444),
+            juzWidget.style?.color == const Color(0xFFEF4444),
         isTrue,
         reason: 'Invalid Juz (35) must have red color',
       );
@@ -346,7 +374,7 @@ void main() {
       juzWidget = tester.widget<TextField>(juzField);
       expect(
         juzWidget.style?.color == const Color(0xFFDC2626) ||
-        juzWidget.style?.color == const Color(0xFFEF4444),
+            juzWidget.style?.color == const Color(0xFFEF4444),
         isTrue,
         reason: 'Invalid Juz (0) must have red color',
       );
@@ -364,7 +392,7 @@ void main() {
       hzbWidget = tester.widget<TextField>(hzbField);
       expect(
         hzbWidget.style?.color == const Color(0xFFDC2626) ||
-        hzbWidget.style?.color == const Color(0xFFEF4444),
+            hzbWidget.style?.color == const Color(0xFFEF4444),
         isTrue,
         reason: 'Invalid Hizb (70) must have red color',
       );
@@ -375,13 +403,15 @@ void main() {
       TextField fromWidget = tester.widget<TextField>(fromField);
       expect(
         fromWidget.style?.color == const Color(0xFFDC2626) ||
-        fromWidget.style?.color == const Color(0xFFEF4444),
+            fromWidget.style?.color == const Color(0xFFEF4444),
         isTrue,
         reason: 'Invalid From (150) must have red color',
       );
     });
 
-    testWidgets('Search bar TextField renders comfortably with clear button', (tester) async {
+    testWidgets('Search bar TextField renders comfortably with clear button', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(360, 780);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
@@ -391,10 +421,14 @@ void main() {
 
       final searchField = find.widgetWithText(TextField, 'Search surahs…');
       expect(searchField, findsOneWidget);
-      // ignore: avoid_print
-      print('SEARCH SIZE: ${tester.getSize(searchField)}');
-      // ignore: avoid_print
-      print('FILTER BUTTON SIZE: ${tester.getSize(find.byTooltip('Filters'))}');
+      await tester.tap(find.byTooltip('Filters'));
+      await tester.pumpAndSettle();
+      final juz = find.widgetWithText(TextField, 'Juz');
+      final searchRect = tester.getRect(searchField);
+      final juzRect = tester.getRect(juz);
+      expect(juzRect.height, 46.0);
+      expect(juzRect.top, searchRect.top);
+      expect(juzRect.bottom, searchRect.bottom);
     });
   });
 
@@ -405,220 +439,247 @@ void main() {
         expect(surah.localizedTranslationForLang('es'), isNotEmpty);
         expect(surah.localizedTranslationForLang('fr'), isNotEmpty);
       }
-      expect(MockData.surahs[0].localizedTranslationForLang('es'), 'La Apertura');
+      expect(
+        MockData.surahs[0].localizedTranslationForLang('es'),
+        'La Apertura',
+      );
       expect(MockData.surahs[1].localizedTranslationForLang('es'), 'La Vaca');
-      expect(MockData.surahs[0].localizedTranslationForLang('fr'), "L'Ouverture");
+      expect(
+        MockData.surahs[0].localizedTranslationForLang('fr'),
+        "L'Ouverture",
+      );
       expect(MockData.surahs[1].localizedTranslationForLang('fr'), 'La Vache');
     });
 
-    testWidgets('SurahTile displays Spanish translation and aligned verses slot when locale is Spanish', (tester) async {
-      tester.view.physicalSize = const Size(360, 780);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+    testWidgets(
+      'SurahTile displays Spanish translation and aligned verses slot when locale is Spanish',
+      (tester) async {
+        tester.view.physicalSize = const Size(360, 780);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
 
-      final surah1 = MockData.surahs.first; // Al-Fatihah
+        final surah1 = MockData.surahs.first; // Al-Fatihah
 
-      await tester.pumpWidget(
-        MultiProvider(
-          providers: [
-            ChangeNotifierProvider(create: (_) => SettingsProvider()),
-            ChangeNotifierProvider(create: (_) => ViewModeProvider()),
-            ChangeNotifierProvider(create: (_) => PlaylistProvider()),
-            ChangeNotifierProvider(create: (_) => PlayerProvider()),
-          ],
-          child: MaterialApp(
-            locale: const Locale('es'),
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
+        await tester.pumpWidget(
+          MultiProvider(
+            providers: [
+              ChangeNotifierProvider(create: (_) => SettingsProvider()),
+              ChangeNotifierProvider(create: (_) => ViewModeProvider()),
+              ChangeNotifierProvider(create: (_) => PlaylistProvider()),
+              ChangeNotifierProvider(create: (_) => PlayerProvider()),
             ],
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: SizedBox(
-                width: 360,
-                child: SurahTile(surah: surah1),
+            child: MaterialApp(
+              locale: const Locale('es'),
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: SizedBox(width: 360, child: SurahTile(surah: surah1)),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Should display Spanish translation "La Apertura" instead of English "The Opening"
-      expect(find.text('La Apertura'), findsOneWidget);
-      expect(find.text('The Opening'), findsNothing);
-      expect(find.text('· 7 aleyas'), findsOneWidget);
+        // Should display Spanish translation "La Apertura" instead of English "The Opening"
+        expect(find.text('La Apertura'), findsOneWidget);
+        expect(find.text('The Opening'), findsNothing);
+        expect(find.text('· 7 aleyas'), findsOneWidget);
 
-      // Verify verses text is wrapped in fixed-width 72px slot for vertical alignment on mobile
-      final versesTextFinder = find.text('· 7 aleyas');
-      final versesSizedBox = tester.widget<SizedBox>(
-        find.ancestor(of: versesTextFinder, matching: find.byType(SizedBox)).first,
-      );
-      expect(versesSizedBox.width, 72.0);
+        // Verify verses text is wrapped in fixed-width 72px slot for vertical alignment on mobile
+        final versesTextFinder = find.text('· 7 aleyas');
+        final versesSizedBox = tester.widget<SizedBox>(
+          find
+              .ancestor(of: versesTextFinder, matching: find.byType(SizedBox))
+              .first,
+        );
+        expect(versesSizedBox.width, 72.0);
 
-      // Verify Arabic name container has fixed width 70px on mobile
-      final arabicFinder = find.text(surah1.nameAr);
-      final arabicSizedBox = tester.widget<SizedBox>(
-        find.ancestor(of: arabicFinder, matching: find.byType(SizedBox)).first,
-      );
-      expect(arabicSizedBox.width, 70.0);
-    });
+        // Verify Arabic name container has fixed width 70px on mobile
+        final arabicFinder = find.text(surah1.nameAr);
+        final arabicSizedBox = tester.widget<SizedBox>(
+          find
+              .ancestor(of: arabicFinder, matching: find.byType(SizedBox))
+              .first,
+        );
+        expect(arabicSizedBox.width, 70.0);
+      },
+    );
 
-    testWidgets('SurahTile on PC/Chrome wide screens keeps names, tags, and verses naturally grouped', (tester) async {
-      // 1200px wide desktop viewport
-      tester.view.physicalSize = const Size(1200, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+    testWidgets(
+      'SurahTile on PC/Chrome wide screens keeps names, tags, and verses naturally grouped',
+      (tester) async {
+        // 1200px wide desktop viewport
+        tester.view.physicalSize = const Size(1200, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
 
-      final surah1 = MockData.surahs.first; // Al-Fatihah
+        final surah1 = MockData.surahs.first; // Al-Fatihah
 
-      await tester.pumpWidget(
-        MultiProvider(
-          providers: [
-            ChangeNotifierProvider(create: (_) => SettingsProvider()),
-            ChangeNotifierProvider(create: (_) => ViewModeProvider()),
-            ChangeNotifierProvider(create: (_) => PlaylistProvider()),
-            ChangeNotifierProvider(create: (_) => PlayerProvider()),
-          ],
-          child: MaterialApp(
-            locale: const Locale('es'),
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
+        await tester.pumpWidget(
+          MultiProvider(
+            providers: [
+              ChangeNotifierProvider(create: (_) => SettingsProvider()),
+              ChangeNotifierProvider(create: (_) => ViewModeProvider()),
+              ChangeNotifierProvider(create: (_) => PlaylistProvider()),
+              ChangeNotifierProvider(create: (_) => PlayerProvider()),
             ],
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: SizedBox(
-                width: 1200,
-                child: SurahTile(surah: surah1),
+            child: MaterialApp(
+              locale: const Locale('es'),
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: SizedBox(width: 1200, child: SurahTile(surah: surah1)),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull);
-      expect(find.text('Al-Fatihah'), findsOneWidget);
-      expect(find.text('Meca'), findsOneWidget);
-      expect(find.text('La Apertura'), findsOneWidget);
-      expect(find.text('· 7 aleyas'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        expect(find.text('Al-Fatihah'), findsOneWidget);
+        expect(find.text('Meca'), findsOneWidget);
+        expect(find.text('La Apertura'), findsOneWidget);
+        expect(find.text('· 7 aleyas'), findsOneWidget);
 
-      // On PC/Chrome, Arabic name does NOT have fixed 70px constriction
-      final arabicFinder = find.text(surah1.nameAr);
-      expect(arabicFinder, findsOneWidget);
-    });
+        // On PC/Chrome, Arabic name does NOT have fixed 70px constriction
+        final arabicFinder = find.text(surah1.nameAr);
+        expect(arabicFinder, findsOneWidget);
+      },
+    );
 
-    testWidgets('Filter fields are mutually exclusive: typing in one clears contradictory fields', (tester) async {
-      tester.view.physicalSize = const Size(360, 780);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+    testWidgets(
+      'Filter fields are mutually exclusive: typing in one clears contradictory fields',
+      (tester) async {
+        tester.view.physicalSize = const Size(360, 780);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
 
-      await tester.pumpWidget(createTestWidget(const SurahListScreen()));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(createTestWidget(const SurahListScreen()));
+        await tester.pumpAndSettle();
 
-      // Open filter boxes
-      await tester.tap(find.byTooltip('Filters'));
-      await tester.pumpAndSettle();
+        // Open filter boxes
+        await tester.tap(find.byTooltip('Filters'));
+        await tester.pumpAndSettle();
 
-      final juzFinder = find.widgetWithText(TextField, 'Juz');
-      final hzbFinder = find.widgetWithText(TextField, 'Hzb');
-      final fromFinder = find.widgetWithText(TextField, '1');
-      final toFinder = find.widgetWithText(TextField, '114');
+        final juzFinder = find.widgetWithText(TextField, 'Juz');
+        final hzbFinder = find.widgetWithText(TextField, 'Hzb');
+        final fromFinder = find.widgetWithText(TextField, '1');
+        final toFinder = find.widgetWithText(TextField, '114');
 
-      // 1. Enter Juz 30
-      await tester.enterText(juzFinder, '30');
-      await tester.pumpAndSettle();
-      expect(tester.widget<TextField>(juzFinder).controller?.text, '30');
+        // 1. Enter Juz 30
+        await tester.enterText(juzFinder, '30');
+        await tester.pumpAndSettle();
+        expect(tester.widget<TextField>(juzFinder).controller?.text, '30');
 
-      // 2. Now enter Hizb 5 - should clear Juz, From, To
-      await tester.enterText(hzbFinder, '5');
-      await tester.pumpAndSettle();
-      expect(tester.widget<TextField>(hzbFinder).controller?.text, '5');
-      expect(tester.widget<TextField>(juzFinder).controller?.text, '');
-      expect(tester.widget<TextField>(fromFinder).controller?.text, '');
-      expect(tester.widget<TextField>(toFinder).controller?.text, '');
+        // 2. Now enter Hizb 5 - should clear Juz, From, To
+        await tester.enterText(hzbFinder, '5');
+        await tester.pumpAndSettle();
+        expect(tester.widget<TextField>(hzbFinder).controller?.text, '5');
+        expect(tester.widget<TextField>(juzFinder).controller?.text, '');
+        expect(tester.widget<TextField>(fromFinder).controller?.text, '');
+        expect(tester.widget<TextField>(toFinder).controller?.text, '');
 
-      // 3. Now enter From 10 and To 30 - should clear Hizb and Juz, but keep From and To
-      await tester.enterText(fromFinder, '10');
-      await tester.pumpAndSettle();
-      expect(tester.widget<TextField>(fromFinder).controller?.text, '10');
-      expect(tester.widget<TextField>(hzbFinder).controller?.text, '');
-      expect(tester.widget<TextField>(juzFinder).controller?.text, '');
+        // 3. Now enter From 10 and To 30 - should clear Hizb and Juz, but keep From and To
+        await tester.enterText(fromFinder, '10');
+        await tester.pumpAndSettle();
+        expect(tester.widget<TextField>(fromFinder).controller?.text, '10');
+        expect(tester.widget<TextField>(hzbFinder).controller?.text, '');
+        expect(tester.widget<TextField>(juzFinder).controller?.text, '');
 
-      await tester.enterText(toFinder, '30');
-      await tester.pumpAndSettle();
-      expect(tester.widget<TextField>(fromFinder).controller?.text, '10');
-      expect(tester.widget<TextField>(toFinder).controller?.text, '30');
-      expect(tester.widget<TextField>(hzbFinder).controller?.text, '');
-      expect(tester.widget<TextField>(juzFinder).controller?.text, '');
+        await tester.enterText(toFinder, '30');
+        await tester.pumpAndSettle();
+        expect(tester.widget<TextField>(fromFinder).controller?.text, '10');
+        expect(tester.widget<TextField>(toFinder).controller?.text, '30');
+        expect(tester.widget<TextField>(hzbFinder).controller?.text, '');
+        expect(tester.widget<TextField>(juzFinder).controller?.text, '');
 
-      // 4. Now enter Juz 20 - should clear From and To
-      await tester.enterText(juzFinder, '20');
-      await tester.pumpAndSettle();
-      expect(tester.widget<TextField>(juzFinder).controller?.text, '20');
-      expect(tester.widget<TextField>(fromFinder).controller?.text, '');
-      expect(tester.widget<TextField>(toFinder).controller?.text, '');
-      expect(tester.widget<TextField>(hzbFinder).controller?.text, '');
-    });
+        // 4. Now enter Juz 20 - should clear From and To
+        await tester.enterText(juzFinder, '20');
+        await tester.pumpAndSettle();
+        expect(tester.widget<TextField>(juzFinder).controller?.text, '20');
+        expect(tester.widget<TextField>(fromFinder).controller?.text, '');
+        expect(tester.widget<TextField>(toFinder).controller?.text, '');
+        expect(tester.widget<TextField>(hzbFinder).controller?.text, '');
+      },
+    );
 
-    testWidgets('Add all with active filter adds only filtered surahs and not all 114', (tester) async {
-      tester.view.physicalSize = const Size(360, 780);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+    testWidgets(
+      'Add all with active filter adds only filtered surahs and not all 114',
+      (tester) async {
+        tester.view.physicalSize = const Size(360, 780);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
 
-      final playlistProvider = PlaylistProvider();
+        final playlistProvider = PlaylistProvider();
 
-      await tester.pumpWidget(
-        MultiProvider(
-          providers: [
-            ChangeNotifierProvider(create: (_) => SettingsProvider()),
-            ChangeNotifierProvider(create: (_) => ViewModeProvider()),
-            ChangeNotifierProvider.value(value: playlistProvider),
-            ChangeNotifierProvider(create: (_) => PlayerProvider()),
-          ],
-          child: const MaterialApp(
-            locale: Locale('en'),
-            localizationsDelegates: [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
+        await tester.pumpWidget(
+          MultiProvider(
+            providers: [
+              ChangeNotifierProvider(create: (_) => SettingsProvider()),
+              ChangeNotifierProvider(create: (_) => ViewModeProvider()),
+              ChangeNotifierProvider.value(value: playlistProvider),
+              ChangeNotifierProvider(create: (_) => PlayerProvider()),
             ],
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: SurahListScreen(),
+            child: const MaterialApp(
+              locale: Locale('en'),
+              localizationsDelegates: [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: SurahListScreen(),
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Open filters and enter Juz 30 (which has 37 surahs)
-      await tester.tap(find.byTooltip('Filters'));
-      await tester.pumpAndSettle();
+        // Open filters and enter Juz 30 (which has 37 surahs)
+        await tester.tap(find.byTooltip('Filters'));
+        await tester.pumpAndSettle();
 
-      final juzFinder = find.widgetWithText(TextField, 'Juz');
-      await tester.enterText(juzFinder, '30');
-      await tester.pumpAndSettle();
+        final juzFinder = find.widgetWithText(TextField, 'Juz');
+        await tester.enterText(juzFinder, '30');
+        await tester.pumpAndSettle();
 
-      // Floating action button should now show "Add all (37)"
-      final addAllFilteredFinder = find.text('Add all (37)');
-      expect(addAllFilteredFinder, findsOneWidget);
+        // Floating action button should now show "Add all (37)"
+        final addAllFilteredFinder = find.text('Add all (37)');
+        expect(addAllFilteredFinder, findsOneWidget);
 
-      // Tap "Add all (37)"
-      await tester.tap(addAllFilteredFinder);
-      await tester.pumpAndSettle(const Duration(seconds: 4));
+        // Tap "Add all (37)"
+        await tester.tap(addAllFilteredFinder);
+        await tester.pumpAndSettle(const Duration(seconds: 4));
 
-      // Verify ONLY the 37 surahs of Juz 30 were added, NOT all 114
-      expect(playlistProvider.items.length, 37);
-      expect(playlistProvider.containsSurah(78), isTrue); // An-Naba (in Juz 30)
-      expect(playlistProvider.containsSurah(114), isTrue); // An-Nas (in Juz 30)
-      expect(playlistProvider.containsSurah(1), isFalse); // Al-Fatihah (NOT in Juz 30)
-      expect(playlistProvider.containsSurah(2), isFalse); // Al-Baqarah (NOT in Juz 30)
-    });
+        // Verify ONLY the 37 surahs of Juz 30 were added, NOT all 114
+        expect(playlistProvider.items.length, 37);
+        expect(
+          playlistProvider.containsSurah(78),
+          isTrue,
+        ); // An-Naba (in Juz 30)
+        expect(
+          playlistProvider.containsSurah(114),
+          isTrue,
+        ); // An-Nas (in Juz 30)
+        expect(
+          playlistProvider.containsSurah(1),
+          isFalse,
+        ); // Al-Fatihah (NOT in Juz 30)
+        expect(
+          playlistProvider.containsSurah(2),
+          isFalse,
+        ); // Al-Baqarah (NOT in Juz 30)
+      },
+    );
   });
 }
-
