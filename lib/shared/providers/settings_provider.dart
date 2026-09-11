@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/models/audio_api_source.dart';
 
 enum PlaybackCompletionAction { next, repeat, stop }
 
@@ -7,15 +8,22 @@ class SettingsProvider extends ChangeNotifier {
   static const _themeKey = 'app_theme_mode';
   static const _localeKey = 'app_locale';
   static const _playbackKey = 'app_playback_completion';
+  static const _activeSourcesKey = 'app_active_audio_sources';
 
   ThemeMode _themeMode = ThemeMode.system;
   Locale? _locale; // null indicates system default
   PlaybackCompletionAction _playbackCompletion = PlaybackCompletionAction.next;
+  Set<AudioApiSource> _activeApiSources = {
+    AudioApiSource.mp3Quran,
+    AudioApiSource.quranicAudio,
+    AudioApiSource.alQuranCloud,
+  };
   bool _isLoaded = false;
 
   ThemeMode get themeMode => _themeMode;
   Locale? get locale => _locale;
   PlaybackCompletionAction get playbackCompletion => _playbackCompletion;
+  Set<AudioApiSource> get activeApiSources => Set.unmodifiable(_activeApiSources);
   bool get isLoaded => _isLoaded;
 
   SettingsProvider() {
@@ -51,6 +59,18 @@ class SettingsProvider extends ChangeNotifier {
       _playbackCompletion = PlaybackCompletionAction.stop;
     } else {
       _playbackCompletion = PlaybackCompletionAction.next;
+    }
+
+    // Active Audio API Sources
+    final sourcesList = prefs.getStringList(_activeSourcesKey);
+    if (sourcesList != null && sourcesList.isNotEmpty) {
+      final parsed = sourcesList
+          .map((id) => AudioApiSourceExtension.fromId(id))
+          .whereType<AudioApiSource>()
+          .toSet();
+      if (parsed.isNotEmpty) {
+        _activeApiSources = parsed;
+      }
     }
 
     _isLoaded = true;
@@ -96,5 +116,32 @@ class SettingsProvider extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_playbackKey, action.name);
+  }
+
+  bool isApiSourceEnabled(AudioApiSource source) =>
+      _activeApiSources.contains(source);
+
+  /// Toggle an audio API source. Returns false if attempting to disable the only active source.
+  Future<bool> toggleApiSource(AudioApiSource source) async {
+    if (_activeApiSources.contains(source)) {
+      if (_activeApiSources.length <= 1) {
+        return false; // Prevent disabling the last remaining API source
+      }
+      _activeApiSources.remove(source);
+    } else {
+      _activeApiSources.add(source);
+    }
+
+    notifyListeners();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(
+        _activeSourcesKey,
+        _activeApiSources.map((s) => s.id).toList(),
+      );
+    } catch (_) {}
+
+    return true;
   }
 }

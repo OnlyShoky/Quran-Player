@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/localization/app_localizations.dart';
+import '../../core/models/audio_api_source.dart';
 import '../../shared/providers/settings_provider.dart';
 import '../../shared/providers/view_mode_provider.dart';
 import '../../shared/utils/app_snackbar.dart';
@@ -173,6 +174,65 @@ class SettingsScreen extends StatelessWidget {
                 isArabic: true,
                 isSelected: settings.locale?.languageCode == 'ar',
                 onTap: () => settings.setLocale(const Locale('ar')),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+
+          // ================= AUDIO SOURCES & APIS =================
+          _SectionHeader(
+            title: context.tr('section_audio_sources'),
+            icon: Icons.cloud_sync_rounded,
+          ),
+          const SizedBox(height: 8),
+          _SettingsCard(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Text(
+                  context.tr('audio_sources_desc'),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
+                    height: 1.35,
+                  ),
+                ),
+              ),
+              Divider(height: 1, color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+              _AudioSourceTile(
+                title: 'MP3Quran.net',
+                description: context.tr('api_mp3quran_desc'),
+                isEnabled: settings.isApiSourceEnabled(AudioApiSource.mp3Quran),
+                onChanged: (val) async {
+                  final ok = await settings.toggleApiSource(AudioApiSource.mp3Quran);
+                  if (!ok && context.mounted) {
+                    showAppSnackBar(context, context.tr('cannot_disable_all_sources'));
+                  }
+                },
+              ),
+              Divider(height: 1, color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+              _AudioSourceTile(
+                title: 'QuranicAudio.com',
+                description: context.tr('api_quranicaudio_desc'),
+                isEnabled: settings.isApiSourceEnabled(AudioApiSource.quranicAudio),
+                onChanged: (val) async {
+                  final ok = await settings.toggleApiSource(AudioApiSource.quranicAudio);
+                  if (!ok && context.mounted) {
+                    showAppSnackBar(context, context.tr('cannot_disable_all_sources'));
+                  }
+                },
+              ),
+              Divider(height: 1, color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+              _AudioSourceTile(
+                title: 'AlQuran Cloud',
+                description: context.tr('api_alqurancloud_desc'),
+                isEnabled: settings.isApiSourceEnabled(AudioApiSource.alQuranCloud),
+                onChanged: (val) async {
+                  final ok = await settings.toggleApiSource(AudioApiSource.alQuranCloud);
+                  if (!ok && context.mounted) {
+                    showAppSnackBar(context, context.tr('cannot_disable_all_sources'));
+                  }
+                },
               ),
             ],
           ),
@@ -411,3 +471,47 @@ class _LanguageTile extends StatelessWidget {
     );
   }
 }
+
+class _AudioSourceTile extends StatelessWidget {
+  final String title;
+  final String description;
+  final bool isEnabled;
+  final ValueChanged<bool> onChanged;
+
+  const _AudioSourceTile({
+    required this.title,
+    required this.description,
+    required this.isEnabled,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return SwitchListTile.adaptive(
+      value: isEnabled,
+      onChanged: onChanged,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      title: Text(
+        title,
+        style: theme.textTheme.titleSmall?.copyWith(
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      subtitle: Padding(
+        padding: const EdgeInsets.only(top: 2),
+        child: Text(
+          description,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
+            height: 1.3,
+          ),
+        ),
+      ),
+      activeTrackColor: isDark ? AppColors.primaryDark : AppColors.primaryLight,
+    );
+  }
+}
+

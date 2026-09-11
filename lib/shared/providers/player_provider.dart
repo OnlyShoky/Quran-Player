@@ -217,14 +217,9 @@ class PlayerProvider extends ChangeNotifier {
     }
   }
 
-  /// Construct audio URL: serverUrl + 3-digit surah id + .mp3
+  /// Construct audio URL for primary source
   String getAudioUrl(Surah surah, Reciter reciter) {
-    var server = reciter.serverUrl.trim();
-    if (!server.endsWith('/')) {
-      server = '$server/';
-    }
-    final surahNum = surah.id.toString().padLeft(3, '0');
-    return '$server$surahNum.mp3';
+    return reciter.getAudioUrl(surah.id);
   }
 
   Future<void> loadAndPlay({
@@ -238,29 +233,47 @@ class PlayerProvider extends ChangeNotifier {
     _currentReciter = reciter;
     _errorMessage = null;
 
-    final url = getAudioUrl(surah, reciter);
-    _currentAudioUrl = url;
-
-    try {
-      _state = PlaybackState.buffering;
-      notifyListeners();
-
-      // Setting a new audio source automatically stops previous playback and prepares the new source
-      await _audioPlayer.setAudioSource(
-        AudioSource.uri(Uri.parse(url)),
-        preload: true,
-      );
-      await _audioPlayer.play();
-    } catch (e) {
-      // If loading was cancelled/interrupted because another track was requested, do not report an error
-      final errStr = e.toString().toLowerCase();
-      if (errStr.contains('loading interrupted') ||
-          errStr.contains('interrupted') ||
-          errStr.contains('abort')) {
-        debugPrint('Audio loading interrupted (ignored): $e');
-        return;
+    final candidateUrls = reciter.getAllCandidateAudioUrls(surah.id);
+    if (candidateUrls.isEmpty) {
+      final defaultUrl = getAudioUrl(surah, reciter);
+      if (defaultUrl.isNotEmpty) {
+        candidateUrls.add(defaultUrl);
       }
-      _errorMessage = 'Failed to load audio: $e';
+    }
+
+    _state = PlaybackState.buffering;
+    notifyListeners();
+
+    String? lastError;
+    bool succeeded = false;
+
+    for (var i = 0; i < candidateUrls.length; i++) {
+      final url = candidateUrls[i];
+      _currentAudioUrl = url;
+
+      try {
+        await _audioPlayer.setAudioSource(
+          AudioSource.uri(Uri.parse(url)),
+          preload: true,
+        );
+        await _audioPlayer.play();
+        succeeded = true;
+        break;
+      } catch (e) {
+        final errStr = e.toString().toLowerCase();
+        if (errStr.contains('loading interrupted') ||
+            errStr.contains('interrupted') ||
+            errStr.contains('abort')) {
+          debugPrint('Audio loading interrupted (ignored): $e');
+          return;
+        }
+        lastError = e.toString();
+        debugPrint('Candidate audio source $i failed ($url): $e. Attempting fallback if available.');
+      }
+    }
+
+    if (!succeeded) {
+      _errorMessage = 'Failed to load audio: $lastError';
       _state = PlaybackState.stopped;
       notifyListeners();
     }

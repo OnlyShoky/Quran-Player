@@ -3,15 +3,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/models/playlist_item.dart';
 import '../../core/models/surah.dart';
 import '../../core/models/reciter.dart';
+import '../../core/models/audio_api_source.dart';
 import '../../core/data/mock_data.dart';
 import '../../core/services/api_service.dart';
+import 'settings_provider.dart';
 
 /// Manages the user's playlist and fetches reciters.
 class PlaylistProvider extends ChangeNotifier {
   static const String _favPrefKey = 'favorite_reciter_ids';
   static const String _pinPrefKey = 'pinned_reciter_ids';
 
-  final ApiService _apiService = ApiService();
+  final ApiService _apiService;
 
   List<Reciter> _reciters = [];
   bool _isLoadingReciters = true;
@@ -21,6 +23,7 @@ class PlaylistProvider extends ChangeNotifier {
   List<int> _pinnedReciterIds = [];
 
   final List<PlaylistItem> _items = [];
+  Set<AudioApiSource>? _lastKnownSources;
 
   List<Reciter> get reciters => List.unmodifiable(_reciters);
   bool get isLoadingReciters => _isLoadingReciters;
@@ -53,9 +56,26 @@ class PlaylistProvider extends ChangeNotifier {
     }
   }
 
-  PlaylistProvider() {
+  PlaylistProvider({ApiService? apiService})
+      : _apiService = apiService ?? ApiService() {
     _loadPreferences();
     _fetchReciters();
+  }
+
+  void updateSettingsProvider(SettingsProvider settings) {
+    final newSources = settings.activeApiSources;
+    if (_lastKnownSources == null) {
+      _lastKnownSources = Set.from(newSources);
+      _fetchReciters(newSources);
+    } else if (!_setEquals(_lastKnownSources!, newSources)) {
+      _lastKnownSources = Set.from(newSources);
+      _fetchReciters(newSources);
+    }
+  }
+
+  bool _setEquals<T>(Set<T> a, Set<T> b) {
+    if (a.length != b.length) return false;
+    return a.containsAll(b);
   }
 
   Future<void> _loadPreferences() async {
@@ -118,18 +138,27 @@ class PlaylistProvider extends ChangeNotifier {
     return true;
   }
 
-  Future<void> _fetchReciters() async {
+  Future<void> _fetchReciters([Set<AudioApiSource>? sources]) async {
     _isLoadingReciters = true;
     notifyListeners();
 
-    _reciters = await _apiService.fetchReciters();
+    _reciters = await _apiService.fetchReciters(enabledSources: sources);
 
-    if (_reciters.isNotEmpty && _selectedReciterId == null) {
-      _selectedReciterId = _reciters.first.id;
+    if (_reciters.isNotEmpty) {
+      if (_selectedReciterId == null ||
+          !_reciters.any((r) => r.id == _selectedReciterId)) {
+        _selectedReciterId = _reciters.first.id;
+      }
+    } else {
+      _selectedReciterId = null;
     }
 
     _isLoadingReciters = false;
     notifyListeners();
+  }
+
+  Future<void> refreshReciters() async {
+    await _fetchReciters(_lastKnownSources);
   }
 
   bool containsSurah(int surahId) =>
