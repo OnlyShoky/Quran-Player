@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/audio_api_source.dart';
 import '../models/reciter.dart';
+import '../data/quranic_audio_data.dart';
 import 'reciter_normalizer.dart';
 
 class ApiService {
@@ -141,58 +142,63 @@ class ApiService {
 
   /// 2. QuranicAudio.com
   Future<List<Reciter>> _fetchQuranicAudioReciters() async {
+    List? list;
     try {
       final response = await _client.get(
         Uri.parse('$_quranicAudioBaseUrl/qaris'),
       );
 
       if (response.statusCode == 200) {
-        final list = json.decode(response.body) as List? ?? [];
-        final reciters = <Reciter>[];
-
-        for (final item in list) {
-          final relPath = item['relative_path'] as String? ?? '';
-          if (relPath.isEmpty) continue;
-
-          final rawName = item['name'] as String? ?? '';
-          if (rawName.isEmpty) continue;
-
-          // Exclude multi-imam / Taraweeh compilations and joint translations
-          final lower = rawName.toLowerCase();
-          if (lower.contains('taraweeh') ||
-              lower.contains('translation') ||
-              lower.contains(' with ') ||
-              lower.contains(' and ')) {
-            continue;
-          }
-
-          final isMujawwad = lower.contains('mujawwad');
-          final style = isMujawwad ? 'Mujawwad' : 'Murattal';
-
-          final arabicName = item['arabic_name'] as String?;
-          final rawId = (item['id'] as num?)?.toInt() ?? 0;
-
-          reciters.add(Reciter(
-            id: 100000 + rawId, // offset ID to avoid collision before deduplication
-            name: rawName,
-            style: style,
-            serverUrl: 'https://download.quranicaudio.com/quran/$relPath',
-            arabicName: arabicName,
-            audioSources: [
-              ReciterAudioSource(
-                apiSource: AudioApiSource.quranicAudio,
-                baseUrlOrPattern: relPath,
-              ),
-            ],
-          ));
-        }
-
-        return reciters;
+        list = json.decode(response.body) as List?;
+      } else {
+        debugPrint('QuranicAudio returned ${response.statusCode}, using bundled data');
       }
     } catch (e) {
-      debugPrint('QuranicAudio fetch error: $e');
+      debugPrint('QuranicAudio fetch error: $e — using bundled data');
     }
-    return [];
+
+    // Fall back to bundled data if live API is unavailable
+    final source = list ?? kQuranicAudioQaris;
+    final reciters = <Reciter>[];
+
+    for (final item in source) {
+      final relPath = item['relative_path'] as String? ?? '';
+      if (relPath.isEmpty) continue;
+
+      final rawName = item['name'] as String? ?? '';
+      if (rawName.isEmpty) continue;
+
+      // Exclude multi-imam / Taraweeh compilations and joint translations
+      final lower = rawName.toLowerCase();
+      if (lower.contains('taraweeh') ||
+          lower.contains('translation') ||
+          lower.contains(' with ') ||
+          lower.contains(' and ')) {
+        continue;
+      }
+
+      final isMujawwad = lower.contains('mujawwad');
+      final style = isMujawwad ? 'Mujawwad' : 'Murattal';
+
+      final arabicName = item['arabic_name'] as String?;
+      final rawId = (item['id'] as num?)?.toInt() ?? 0;
+
+      reciters.add(Reciter(
+        id: 100000 + rawId, // offset ID to avoid collision before deduplication
+        name: rawName,
+        style: style,
+        serverUrl: 'https://download.quranicaudio.com/quran/$relPath',
+        arabicName: arabicName,
+        audioSources: [
+          ReciterAudioSource(
+            apiSource: AudioApiSource.quranicAudio,
+            baseUrlOrPattern: relPath,
+          ),
+        ],
+      ));
+    }
+
+    return reciters;
   }
 
   /// 3. AlQuran Cloud

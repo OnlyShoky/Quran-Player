@@ -19,7 +19,7 @@ class SettingsProvider extends ChangeNotifier {
     AudioApiSource.quranicAudio,
     AudioApiSource.alQuranCloud,
   };
-  bool _showApiSourceInPlayer = true;
+  bool _showApiSourceInPlayer = false;
   bool _isLoaded = false;
 
   ThemeMode get themeMode => _themeMode;
@@ -77,7 +77,7 @@ class SettingsProvider extends ChangeNotifier {
     }
 
     // Show active API in player
-    _showApiSourceInPlayer = prefs.getBool(_showApiSourceInPlayerKey) ?? true;
+    _showApiSourceInPlayer = prefs.getBool(_showApiSourceInPlayerKey) ?? false;
 
     _isLoaded = true;
     notifyListeners();

@@ -45,7 +45,15 @@ class PlayerProvider extends ChangeNotifier {
   bool get isPlaying => _state == PlaybackState.playing;
   bool get isBuffering => _state == PlaybackState.buffering;
   bool get isDismissed => _isDismissed;
-  AudioApiSource? get currentAudioSource => _currentAudioSource;
+  AudioApiSource? get currentAudioSource {
+    if (_currentAudioSource != null) return _currentAudioSource;
+    if (_currentAudioUrl != null) {
+      if (_currentAudioUrl!.contains('mp3quran.net')) return AudioApiSource.mp3Quran;
+      if (_currentAudioUrl!.contains('quranicaudio.com')) return AudioApiSource.quranicAudio;
+      if (_currentAudioUrl!.contains('islamic.network')) return AudioApiSource.alQuranCloud;
+    }
+    return null;
+  }
 
   Surah? get currentSurah {
     if (_currentSurah != null) return _currentSurah;
@@ -278,6 +286,8 @@ class PlayerProvider extends ChangeNotifier {
     for (var i = 0; i < candidates.length; i++) {
       final candidate = candidates[i];
       _currentAudioUrl = candidate.url;
+      _currentAudioSource = candidate.apiSource;
+      notifyListeners();
 
       try {
         await _audioPlayer.setAudioSource(
@@ -287,6 +297,7 @@ class PlayerProvider extends ChangeNotifier {
         await _audioPlayer.play();
         _currentAudioSource = candidate.apiSource;
         succeeded = true;
+        notifyListeners();
         break;
       } catch (e) {
         lastError = e.toString();

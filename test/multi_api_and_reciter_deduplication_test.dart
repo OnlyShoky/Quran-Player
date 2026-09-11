@@ -158,7 +158,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
     });
 
-    test('Defaults to all 3 audio API sources active and player badge enabled', () async {
+    test('Defaults to all 3 audio API sources active and player badge disabled by default', () async {
       final settings = SettingsProvider();
       await Future.delayed(const Duration(milliseconds: 50));
 
@@ -166,19 +166,19 @@ void main() {
       expect(settings.isApiSourceEnabled(AudioApiSource.mp3Quran), isTrue);
       expect(settings.isApiSourceEnabled(AudioApiSource.quranicAudio), isTrue);
       expect(settings.isApiSourceEnabled(AudioApiSource.alQuranCloud), isTrue);
-      expect(settings.showApiSourceInPlayer, isTrue);
+      expect(settings.showApiSourceInPlayer, isFalse);
     });
 
     test('Can toggle showApiSourceInPlayer setting', () async {
       final settings = SettingsProvider();
       await Future.delayed(const Duration(milliseconds: 50));
 
-      expect(settings.showApiSourceInPlayer, isTrue);
-      await settings.setShowApiSourceInPlayer(false);
       expect(settings.showApiSourceInPlayer, isFalse);
-
       await settings.setShowApiSourceInPlayer(true);
       expect(settings.showApiSourceInPlayer, isTrue);
+
+      await settings.setShowApiSourceInPlayer(false);
+      expect(settings.showApiSourceInPlayer, isFalse);
     });
 
     test('Can toggle source off and on', () async {

@@ -16,7 +16,7 @@ class PlaylistProvider extends ChangeNotifier {
   final ApiService _apiService;
 
   List<Reciter> _reciters = [];
-  bool _isLoadingReciters = true;
+  bool _isLoadingReciters = false;
   int? _selectedReciterId;
 
   Set<int> _favoriteReciterIds = {};
@@ -59,15 +59,20 @@ class PlaylistProvider extends ChangeNotifier {
   PlaylistProvider({ApiService? apiService})
       : _apiService = apiService ?? ApiService() {
     _loadPreferences();
-    _fetchReciters();
+    // Note: _fetchReciters() is NOT called here.
+    // It will be triggered by updateSettingsProvider() once settings are available,
+    // ensuring disabled APIs are respected from the very first fetch.
   }
 
   void updateSettingsProvider(SettingsProvider settings) {
+    // Wait until settings are loaded from SharedPreferences.
+    // SettingsProvider.notifyListeners() is called once loaded, which
+    // re-triggers this proxy update with the correct saved values.
+    if (!settings.isLoaded) return;
+
     final newSources = settings.activeApiSources;
-    if (_lastKnownSources == null) {
-      _lastKnownSources = Set.from(newSources);
-      _fetchReciters(newSources);
-    } else if (!_setEquals(_lastKnownSources!, newSources)) {
+    if (_lastKnownSources == null ||
+        !_setEquals(_lastKnownSources!, newSources)) {
       _lastKnownSources = Set.from(newSources);
       _fetchReciters(newSources);
     }
