@@ -1,11 +1,11 @@
 {
-    "name": "quran_player",
-    "short_name": "quran_player",
+    "name": "sukun | Qur'an, without distractions.",
+    "short_name": "sukun",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#101614",
+    "theme_color": "#101614",
+    "description": "A minimalist Quran audio player. Qur'an, without distractions.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

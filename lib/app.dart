@@ -13,12 +13,17 @@ import 'features/playlist/playlist_screen.dart';
 import 'features/player/player_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'shared/widgets/mini_player.dart';
+import 'core/analytics/analytics_service.dart';
 
 class QuranPlayerApp extends StatelessWidget {
   QuranPlayerApp({super.key});
 
-  final _router = GoRouter(
+  late final GoRouter _router = GoRouter(
     initialLocation: '/surahs',
+    redirect: (context, state) {
+      AnalyticsService.screen(state.matchedLocation);
+      return null;
+    },
     routes: [
       ShellRoute(
         builder: (context, state, child) {
@@ -73,7 +78,7 @@ class QuranPlayerApp extends StatelessWidget {
           final settings = context.watch<SettingsProvider>();
 
           return MaterialApp.router(
-            title: 'Quran Player',
+            title: 'sukun',
             theme: AppTheme.light(),
             darkTheme: AppTheme.dark(),
             themeMode: settings.themeMode,

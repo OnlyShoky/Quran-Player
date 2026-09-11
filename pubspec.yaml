@@ -17,10 +17,14 @@ dependencies:
   provider: ^6.1.2
   go_router: ^14.0.0
   google_fonts: ^6.2.1
+  font_awesome_flutter: ^11.0.0
   shared_preferences: ^2.3.0
   http: ^1.6.0
   just_audio: ^0.10.6
   audio_session: ^0.1.21
+  url_launcher: ^6.3.1
+  firebase_core: ^4.1.0
+  firebase_analytics: ^12.0.0
 
 dev_dependencies:
   flutter_test:
@@ -29,3 +33,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/sukun_logo.png
+    - assets/sukun_logo_dark.png

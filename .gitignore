@@ -44,5 +44,10 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Local publication checklist may contain release secrets and account details
+/CHECKLIST.md
+
 # Widget Preview related
 .widget_preview/
+
+vault/

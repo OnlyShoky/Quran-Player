@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 
@@ -237,14 +236,25 @@ class _SurahListScreenState extends State<SurahListScreen> {
           SliverAppBar(
             floating: true,
             snap: true,
+            leading: Padding(
+              padding: const EdgeInsets.all(10),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(9),
+                child: Image.asset(
+                  isDark ? 'assets/sukun_logo_dark.png' : 'assets/sukun_logo.png',
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
             title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Al-Quran', style: theme.textTheme.titleLarge),
+                Text('sukun', style: theme.textTheme.titleLarge),
                 Text(
-                  'القرآن الكريم',
-                  style: GoogleFonts.amiri(
-                    fontSize: 13,
+                  "Qur'an, without distractions.",
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelSmall?.copyWith(
                     color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
                   ),
                 ),
@@ -270,6 +280,11 @@ class _SurahListScreenState extends State<SurahListScreen> {
                     ? context.tr('tooltip_list_view')
                     : context.tr('tooltip_mosaic_view'),
                 onPressed: viewMode.toggle,
+              ),
+              IconButton(
+                icon: const Icon(Icons.volunteer_activism_outlined, size: 22),
+                tooltip: context.tr('contribute'),
+                onPressed: () => context.push('/settings'),
               ),
               // --- Settings button ---
               IconButton(

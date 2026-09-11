@@ -7,6 +7,7 @@ import '../../core/models/audio_api_source.dart';
 import '../../shared/providers/settings_provider.dart';
 import '../../shared/providers/view_mode_provider.dart';
 import '../../shared/utils/app_snackbar.dart';
+import '../../shared/widgets/donation_actions.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -31,6 +32,23 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         children: [
+          // ================= SUPPORT =================
+          _SectionHeader(
+            title: context.tr('section_support'),
+            icon: Icons.volunteer_activism_outlined,
+          ),
+          const SizedBox(height: 8),
+          _SettingsCard(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: DonationActions(),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+
           // ================= APPEARANCE =================
           _SectionHeader(
             title: context.tr('section_appearance'),
@@ -53,20 +71,36 @@ class SettingsScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
                     SegmentedButton<ThemeMode>(
+                      showSelectedIcon: false,
                       segments: [
                         ButtonSegment(
                           value: ThemeMode.system,
-                          label: Text(context.tr('theme_system')),
+                          label: Text(
+                            context.tr('theme_system'),
+                            maxLines: 1,
+                            softWrap: false,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                           icon: const Icon(Icons.brightness_auto_outlined, size: 18),
                         ),
                         ButtonSegment(
                           value: ThemeMode.light,
-                          label: Text(context.tr('theme_light')),
+                          label: Text(
+                            context.tr('theme_light'),
+                            maxLines: 1,
+                            softWrap: false,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                           icon: const Icon(Icons.wb_sunny_outlined, size: 18),
                         ),
                         ButtonSegment(
                           value: ThemeMode.dark,
-                          label: Text(context.tr('theme_dark')),
+                          label: Text(
+                            context.tr('theme_dark'),
+                            maxLines: 1,
+                            softWrap: false,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                           icon: const Icon(Icons.nightlight_outlined, size: 18),
                         ),
                       ],
@@ -76,6 +110,7 @@ class SettingsScreen extends StatelessWidget {
                       },
                       style: SegmentedButton.styleFrom(
                         visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
                         selectedBackgroundColor: theme.colorScheme.primaryContainer,
                         selectedForegroundColor: isDark
                             ? AppColors.primaryDark
@@ -312,8 +347,6 @@ class SettingsScreen extends StatelessWidget {
               ),
             ],
           ),
-
-          const SizedBox(height: 24),
 
           // ================= ABOUT =================
           _SectionHeader(
