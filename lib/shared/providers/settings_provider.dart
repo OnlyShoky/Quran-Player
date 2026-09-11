@@ -9,6 +9,7 @@ class SettingsProvider extends ChangeNotifier {
   static const _localeKey = 'app_locale';
   static const _playbackKey = 'app_playback_completion';
   static const _activeSourcesKey = 'app_active_audio_sources';
+  static const _showApiSourceInPlayerKey = 'show_api_source_in_player';
 
   ThemeMode _themeMode = ThemeMode.system;
   Locale? _locale; // null indicates system default
@@ -18,12 +19,14 @@ class SettingsProvider extends ChangeNotifier {
     AudioApiSource.quranicAudio,
     AudioApiSource.alQuranCloud,
   };
+  bool _showApiSourceInPlayer = true;
   bool _isLoaded = false;
 
   ThemeMode get themeMode => _themeMode;
   Locale? get locale => _locale;
   PlaybackCompletionAction get playbackCompletion => _playbackCompletion;
   Set<AudioApiSource> get activeApiSources => Set.unmodifiable(_activeApiSources);
+  bool get showApiSourceInPlayer => _showApiSourceInPlayer;
   bool get isLoaded => _isLoaded;
 
   SettingsProvider() {
@@ -65,13 +68,16 @@ class SettingsProvider extends ChangeNotifier {
     final sourcesList = prefs.getStringList(_activeSourcesKey);
     if (sourcesList != null && sourcesList.isNotEmpty) {
       final parsed = sourcesList
-          .map((id) => AudioApiSourceExtension.fromId(id))
-          .whereType<AudioApiSource>()
-          .toSet();
+            .map((id) => AudioApiSource.fromId(id))
+            .whereType<AudioApiSource>()
+            .toSet();
       if (parsed.isNotEmpty) {
         _activeApiSources = parsed;
       }
     }
+
+    // Show active API in player
+    _showApiSourceInPlayer = prefs.getBool(_showApiSourceInPlayerKey) ?? true;
 
     _isLoaded = true;
     notifyListeners();
@@ -143,5 +149,14 @@ class SettingsProvider extends ChangeNotifier {
     } catch (_) {}
 
     return true;
+  }
+
+  Future<void> setShowApiSourceInPlayer(bool value) async {
+    if (_showApiSourceInPlayer == value) return;
+    _showApiSourceInPlayer = value;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_showApiSourceInPlayerKey, value);
   }
 }

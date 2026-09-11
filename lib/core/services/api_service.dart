@@ -67,7 +67,29 @@ class ApiService {
           final moshafList = item['moshaf'] as List? ?? [];
           if (moshafList.isEmpty) continue;
 
-          final moshaf = moshafList[0];
+          final validMoshafs = moshafList.whereType<Map<String, dynamic>>().toList();
+          if (validMoshafs.isEmpty) continue;
+
+          // Prioritize:
+          // 1. Full 114 surahs
+          // 2. Standard Hafs recitation
+          // 3. Highest surah count
+          validMoshafs.sort((a, b) {
+            final aTotal = (a['surah_total'] as num?)?.toInt() ?? 0;
+            final bTotal = (b['surah_total'] as num?)?.toInt() ?? 0;
+            final aName = (a['name'] as String? ?? '').toLowerCase();
+            final bName = (b['name'] as String? ?? '').toLowerCase();
+            final aHafs = aName.contains('hafs');
+            final bHafs = bName.contains('hafs');
+
+            if (aTotal == 114 && bTotal != 114) return -1;
+            if (bTotal == 114 && aTotal != 114) return 1;
+            if (aHafs && !bHafs && aTotal > 0) return -1;
+            if (!aHafs && bHafs && bTotal > 0) return 1;
+            return bTotal.compareTo(aTotal);
+          });
+
+          final moshaf = validMoshafs.first;
           final serverUrl = moshaf['server'] as String? ?? '';
           if (serverUrl.isEmpty) continue;
 
@@ -80,17 +102,32 @@ class ApiService {
 
           final id = (item['id'] as num?)?.toInt() ?? 0;
 
+          final audioSources = <ReciterAudioSource>[
+            ReciterAudioSource(
+              apiSource: AudioApiSource.mp3Quran,
+              baseUrlOrPattern: serverUrl,
+            ),
+          ];
+
+          // Add any alternative complete server (114 surahs) as fallback
+          for (var m = 1; m < validMoshafs.length; m++) {
+            final altServer = validMoshafs[m]['server'] as String? ?? '';
+            final altTotal = (validMoshafs[m]['surah_total'] as num?)?.toInt() ?? 0;
+            if (altServer.isNotEmpty && altServer != serverUrl && altTotal >= 114) {
+              audioSources.add(ReciterAudioSource(
+                apiSource: AudioApiSource.mp3Quran,
+                baseUrlOrPattern: altServer,
+              ));
+              break;
+            }
+          }
+
           reciters.add(Reciter(
             id: id,
             name: rawName,
             style: style,
             serverUrl: serverUrl,
-            audioSources: [
-              ReciterAudioSource(
-                apiSource: AudioApiSource.mp3Quran,
-                baseUrlOrPattern: serverUrl,
-              ),
-            ],
+            audioSources: audioSources,
           ));
         }
 
@@ -120,9 +157,14 @@ class ApiService {
           final rawName = item['name'] as String? ?? '';
           if (rawName.isEmpty) continue;
 
-          // Exclude multi-imam / Taraweeh compilations
+          // Exclude multi-imam / Taraweeh compilations and joint translations
           final lower = rawName.toLowerCase();
-          if (lower.contains('taraweeh') || lower.contains('taraweeh')) continue;
+          if (lower.contains('taraweeh') ||
+              lower.contains('translation') ||
+              lower.contains(' with ') ||
+              lower.contains(' and ')) {
+            continue;
+          }
 
           final isMujawwad = lower.contains('mujawwad');
           final style = isMujawwad ? 'Mujawwad' : 'Murattal';
@@ -224,18 +266,18 @@ class ApiService {
     final Map<String, Reciter> mergedMap = {};
 
     for (final r in rawReciters) {
-      final matchKey = ReciterNormalizer.getMatchKey(r.name);
-      if (matchKey.isEmpty) continue;
-
-      // Group by canonical identity + style (Murattal vs Mujawwad)
-      final groupKey = '$matchKey:${r.style.toLowerCase()}';
       final canonicalName = ReciterNormalizer.getCanonicalName(r.name);
+      final canonicalKey = ReciterNormalizer.getMatchKey(canonicalName);
+      if (canonicalKey.isEmpty) continue;
+
+      // Group strictly by canonical identity + style (Murattal vs Mujawwad)
+      final groupKey = '$canonicalKey:${r.style.toLowerCase()}';
 
       if (mergedMap.containsKey(groupKey)) {
         final existing = mergedMap[groupKey]!;
         mergedMap[groupKey] = existing.mergeWith(r);
       } else {
-        // Generate a stable numeric ID derived from matchKey + style hash
+        // Generate a stable numeric ID derived from canonicalKey + style hash
         final stableId = _generateStableId(groupKey);
         mergedMap[groupKey] = Reciter(
           id: stableId,

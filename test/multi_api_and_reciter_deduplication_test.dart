@@ -4,6 +4,7 @@ import 'package:quran_player/core/models/audio_api_source.dart';
 import 'package:quran_player/core/models/reciter.dart';
 import 'package:quran_player/core/services/reciter_normalizer.dart';
 import 'package:quran_player/shared/providers/settings_provider.dart';
+import 'package:quran_player/shared/providers/player_provider.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -17,14 +18,32 @@ void main() {
       expect(ReciterNormalizer.cleanRawName('Imam Saud Al-Shuraim'), 'Saud Al-Shuraim');
     });
 
-    test('Standardizes variants of Abdul Rahman Al-Sudais', () {
+    test('Standardizes variants of Abdul Rahman Al-Sudais including MP3Quran Alsudaes', () {
       const expected = 'Abdul Rahman Al-Sudais';
+      expect(ReciterNormalizer.getCanonicalName('Abdulrahman Alsudaes'), expected);
       expect(ReciterNormalizer.getCanonicalName('Abdul Rahman Al-Sudais'), expected);
       expect(ReciterNormalizer.getCanonicalName('Abdur-Rahman as-Sudais'), expected);
       expect(ReciterNormalizer.getCanonicalName('Sheikh Sudais'), expected);
       expect(ReciterNormalizer.getCanonicalName('Al Sudais'), expected);
+      expect(ReciterNormalizer.getCanonicalName('Alsudaes'), expected);
       expect(ReciterNormalizer.getCanonicalName('Abdulrahman Al-Sudais'), expected);
       expect(ReciterNormalizer.getCanonicalName('Abdel Rahman as-Sudais'), expected);
+    });
+
+    test('Standardizes variants of Yasser Al-Dosari and ensures identical group key', () {
+      const expected = 'Yasser Al-Dosari';
+      expect(ReciterNormalizer.getCanonicalName('Yasser Al-Dosari'), expected);
+      expect(ReciterNormalizer.getCanonicalName('Yasser ad-Dossari'), expected);
+      expect(ReciterNormalizer.getCanonicalName('Yasser ad-Dussary'), expected);
+      expect(ReciterNormalizer.getCanonicalName('Yasser Aldosari'), expected);
+
+      // Verify group key parity for deduplication
+      final key1 = '${ReciterNormalizer.getMatchKey(ReciterNormalizer.getCanonicalName("Yasser Al-Dosari"))}:murattal';
+      final key2 = '${ReciterNormalizer.getMatchKey(ReciterNormalizer.getCanonicalName("Yasser ad-Dussary"))}:murattal';
+      final key3 = '${ReciterNormalizer.getMatchKey(ReciterNormalizer.getCanonicalName("Yasser ad-Dossari"))}:murattal';
+
+      expect(key1, key2);
+      expect(key2, key3);
     });
 
     test('Standardizes variants of Mishary Rashid Alafasy', () {
@@ -33,6 +52,7 @@ void main() {
       expect(ReciterNormalizer.getCanonicalName('Mishary Rashid Alafasy'), expected);
       expect(ReciterNormalizer.getCanonicalName('Alafasy'), expected);
       expect(ReciterNormalizer.getCanonicalName('Mishari Alafasy'), expected);
+      expect(ReciterNormalizer.getCanonicalName('Mishari Alafasi'), expected);
     });
 
     test('Standardizes variants of Saud Al-Shuraim', () {
@@ -41,11 +61,14 @@ void main() {
       expect(ReciterNormalizer.getCanonicalName('Saud Al-Shuraim'), expected);
       expect(ReciterNormalizer.getCanonicalName('Shuraim'), expected);
       expect(ReciterNormalizer.getCanonicalName('Saood Ash-Shuraym'), expected);
+      expect(ReciterNormalizer.getCanonicalName('Saud Alshuraim'), expected);
     });
 
     test('Standardizes variants of Mahmoud Khalil Al-Husary', () {
       const expected = 'Mahmoud Khalil Al-Husary';
       expect(ReciterNormalizer.getCanonicalName('Mahmoud Khalil Al-Husary'), expected);
+      expect(ReciterNormalizer.getCanonicalName('Mahmoud Khaleel Al-Husary'), expected);
+      expect(ReciterNormalizer.getCanonicalName('Mahmoud Khalil Al-Hussary'), expected);
       expect(ReciterNormalizer.getCanonicalName('Husary'), expected);
       expect(ReciterNormalizer.getCanonicalName('Al-Husari'), expected);
     });
@@ -54,6 +77,7 @@ void main() {
       const expected = 'Mohamed Siddiq Al-Minshawi';
       expect(ReciterNormalizer.getCanonicalName('Mohamed Siddiq al-Minshawi'), expected);
       expect(ReciterNormalizer.getCanonicalName('Muhammad Siddiq al-Minshawi'), expected);
+      expect(ReciterNormalizer.getCanonicalName('Mohammed Siddiq Al-Minshawi'), expected);
       expect(ReciterNormalizer.getCanonicalName('Minshawi'), expected);
       expect(ReciterNormalizer.getCanonicalName('Minshawy'), expected);
     });
@@ -117,6 +141,13 @@ void main() {
       expect(candidates[1], 'https://download.quranicaudio.com/quran/abdurrahmaan_as-sudays/001.mp3');
       expect(candidates[2], 'https://cdn.islamic.network/quran/audio-surah/128/ar.abdurrahmaansudais/1.mp3');
 
+      // Verify CandidateAudioSource paired with AudioApiSource
+      final candidateSources = merged.getAllCandidateAudioSources(1);
+      expect(candidateSources.length, 3);
+      expect(candidateSources[0].apiSource, AudioApiSource.mp3Quran);
+      expect(candidateSources[1].apiSource, AudioApiSource.quranicAudio);
+      expect(candidateSources[2].apiSource, AudioApiSource.alQuranCloud);
+
       // Verify primary URL
       expect(merged.getAudioUrl(1), 'https://server11.mp3quran.net/sds/001.mp3');
     });
@@ -127,7 +158,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
     });
 
-    test('Defaults to all 3 audio API sources active', () async {
+    test('Defaults to all 3 audio API sources active and player badge enabled', () async {
       final settings = SettingsProvider();
       await Future.delayed(const Duration(milliseconds: 50));
 
@@ -135,6 +166,19 @@ void main() {
       expect(settings.isApiSourceEnabled(AudioApiSource.mp3Quran), isTrue);
       expect(settings.isApiSourceEnabled(AudioApiSource.quranicAudio), isTrue);
       expect(settings.isApiSourceEnabled(AudioApiSource.alQuranCloud), isTrue);
+      expect(settings.showApiSourceInPlayer, isTrue);
+    });
+
+    test('Can toggle showApiSourceInPlayer setting', () async {
+      final settings = SettingsProvider();
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      expect(settings.showApiSourceInPlayer, isTrue);
+      await settings.setShowApiSourceInPlayer(false);
+      expect(settings.showApiSourceInPlayer, isFalse);
+
+      await settings.setShowApiSourceInPlayer(true);
+      expect(settings.showApiSourceInPlayer, isTrue);
     });
 
     test('Can toggle source off and on', () async {
@@ -169,4 +213,55 @@ void main() {
       expect(settings.isApiSourceEnabled(AudioApiSource.alQuranCloud), isTrue);
     });
   });
+
+  group('Moshaf Selection & Reciter Switching Tests', () {
+    test('Reciter.fromJson prioritizes 114-surah Hafs moshaf over incomplete moshafs', () {
+      final json = {
+        'id': 123,
+        'name': 'Mishary Alafasi',
+        'moshaf': [
+          {
+            'id': 1,
+            'name': "Rewayat AlDorai A'n Al-Kisa'ai - Murattal",
+            'server': 'https://server8.mp3quran.net/afs/Rewayat-AlDorai-A-n-Al-Kisa-ai/',
+            'surah_total': 6,
+          },
+          {
+            'id': 2,
+            'name': "Rewayat Hafs A'n Assem - Murattal",
+            'server': 'https://server8.mp3quran.net/afs/',
+            'surah_total': 114,
+          },
+        ],
+      };
+
+      final reciter = Reciter.fromJson(json);
+      expect(reciter.serverUrl, 'https://server8.mp3quran.net/afs/');
+      expect(reciter.getAudioUrl(1), 'https://server8.mp3quran.net/afs/001.mp3');
+      expect(reciter.style, 'Murattal');
+    });
+
+    test('PlayerProvider.selectReciter updates active reciter', () {
+      final player = PlayerProvider();
+      const reciter1 = Reciter(
+        id: 1,
+        name: 'Abdul Rahman Al-Sudais',
+        style: 'Murattal',
+        serverUrl: 'https://server11.mp3quran.net/sds/',
+      );
+      const reciter2 = Reciter(
+        id: 2,
+        name: 'Mishary Rashid Alafasy',
+        style: 'Murattal',
+        serverUrl: 'https://server8.mp3quran.net/afs/',
+      );
+
+      player.selectReciter(reciter1);
+      expect(player.currentReciter?.name, 'Abdul Rahman Al-Sudais');
+
+      player.selectReciter(reciter2);
+      expect(player.currentReciter?.name, 'Mishary Rashid Alafasy');
+    });
+  });
 }
+

@@ -5,8 +5,7 @@ class ReciterNormalizer {
     var name = raw;
 
     // Remove text inside parentheses / brackets if it's metadata
-    name = name.replaceAll(RegExp(r'\s*\(.*?\)', caseSensitive: false), ' ');
-    name = name.replaceAll(RegExp(r'\s*\[.*?\]', caseSensitive: false), ' ');
+    name = name.replaceAll(RegExp(r'\s*[\(\[].*?[\)\]]', caseSensitive: false), ' ');
 
     // Remove titles & honorifics
     final titlePattern = RegExp(
@@ -15,9 +14,10 @@ class ReciterNormalizer {
     );
     name = name.replaceAll(titlePattern, '').trim();
 
-    // Replace special apostrophes or backticks
+    // Remove special apostrophes, backticks, quotes
     name = name.replaceAll('`', '');
     name = name.replaceAll("'", '');
+    name = name.replaceAll('"', '');
 
     // Replace multiple spaces with a single space
     name = name.replaceAll(RegExp(r'\s+'), ' ').trim();
@@ -31,30 +31,49 @@ class ReciterNormalizer {
     // Remove diacritics/accents
     clean = _removeDiacritics(clean);
 
-    // Replace numbers and special transliteration symbols
+    // Replace numbers and symbols
     clean = clean.replaceAll('3', 'a');
-    clean = clean.replaceAll('`', '');
-    clean = clean.replaceAll("'", '');
-    clean = clean.replaceAll('"', '');
     clean = clean.replaceAll('-', ' ');
     clean = clean.replaceAll('_', ' ');
 
-    // Normalize standard word variants
-    clean = clean.replaceAll(RegExp(r'\babdel\b|\babdur\b|\babdul\b'), 'abdul');
-    clean = clean.replaceAll(RegExp(r'\bash\b|\bal\b|\bas\b|\bat\b|\baz\b|\ban\b|\bel\b|\bar\b|\bad\b|\bath\b'), '');
+    // Split concatenated Arabic articles: e.g. "alsudaes" -> "sudaes", "aldosari" -> "dosari"
+    clean = clean.replaceAllMapped(
+      RegExp(r'\b(al|el|ash|as|at|az|an|ar|ad|ath)([a-z]{3,})\b'),
+      (m) => m[2]!,
+    );
+    clean = clean.replaceAll(RegExp(r'\b(ash|al|as|at|az|an|el|ar|ad|ath)\b'), '');
 
-    // Phonetic standardizations
-    clean = clean.replaceAll('y', 'i');
-    clean = clean.replaceAll('ee', 'i');
-    clean = clean.replaceAll('oo', 'u');
-    clean = clean.replaceAll('ou', 'u');
-    clean = clean.replaceAll('aa', 'a');
+    // Split concatenated "abdul" e.g. "abdulrahman" -> "abdul rahman"
+    clean = clean.replaceAllMapped(
+      RegExp(r'\b(abdel|abdur|abdul)([a-z]{3,})\b'),
+      (m) => 'abdul ${m[2]!}',
+    );
+    clean = clean.replaceAll(RegExp(r'\babdel\b|\babdur\b|\babdul\b'), 'abdul');
+
+    // Standardize known key variations
+    clean = clean.replaceAll(RegExp(r'sudaes|sudais'), 'sudais');
+    clean = clean.replaceAll(RegExp(r'shuraim|shuraym'), 'shuraim');
+    clean = clean.replaceAll(RegExp(r'afasy|afasi'), 'afasy');
+    clean = clean.replaceAll(RegExp(r'minshawi|minshawy|menshawy'), 'minshawi');
+    clean = clean.replaceAll(RegExp(r'husary|husari|hussary'), 'husary');
+    clean = clean.replaceAll(RegExp(r'ghamdi|ghamidi'), 'ghamdi');
+    clean = clean.replaceAll(RegExp(r'ajmi|ajami|ajamy'), 'ajmi');
+    clean = clean.replaceAll(RegExp(r'dosari|dossari|dussary'), 'dosari');
+    clean = clean.replaceAll(RegExp(r'juhani|juhanee|juhaynee'), 'juhani');
+    clean = clean.replaceAll(RegExp(r'basfar|basfer'), 'basfar');
+    clean = clean.replaceAll(RegExp(r'hudhaify|huthaify'), 'hudhaify');
+    clean = clean.replaceAll(RegExp(r'tablawi|tablawy'), 'tablawi');
+
+    // Phonetic vowel normalizations
+    clean = clean.replaceAll(RegExp(r'ee|ey|ei|ae|ai|y'), 'i');
+    clean = clean.replaceAll(RegExp(r'oo|ou|o'), 'u');
+    clean = clean.replaceAll('e', 'i');
 
     // Keep only lowercase letters
     clean = clean.replaceAll(RegExp(r'[^a-z]'), '');
 
     // Deduplicate repeated consecutive consonants (e.g. ss -> s, dd -> d, mm -> m)
-    clean = clean.replaceAll(RegExp(r'([a-z])\1+'), r'$1');
+    clean = clean.replaceAllMapped(RegExp(r'([a-z])\1+'), (m) => m[1]!);
 
     return clean;
   }
@@ -66,17 +85,21 @@ class ReciterNormalizer {
     final definitions = <String, List<String>>{
       'Abdul Rahman Al-Sudais': [
         'Abdul Rahman Al-Sudais',
+        'Abdulrahman Alsudaes',
         'Abdur-Rahman as-Sudais',
         'Abdulrahman Al-Sudais',
         'Abdel Rahman as-Sudais',
         'Al Sudais',
+        'Alsudaes',
         'Sudais',
+        'Sudaes',
       ],
       'Saud Al-Shuraim': [
         'Saud Al-Shuraim',
         'Sa`ud ash-Shuraym',
         'Saood ash-Shuraym',
         'Saood Ash-Shuraym',
+        'Saud Alshuraim',
         'Shuraim',
         'Shuraym',
       ],
@@ -84,14 +107,18 @@ class ReciterNormalizer {
         'Mishary Rashid Alafasy',
         'Mishari Rashid al-`Afasy',
         'Mishaari Raashid Al-Afaasee',
+        'Mishari Alafasi',
+        'Mishary Alafasi',
         'Mishari Alafasy',
         'Mishary Alafasy',
         'Alafasy',
+        'Alafasi',
       ],
       'Abdul Basit Abdul Samad': [
         'Abdul Basit Abdul Samad',
         'Abdul Basit Abdus-Samad',
         'AbdulBaset AbdulSamad',
+        'Abdulbasit Abdulsamad',
         'Abdelbasset Abdelsamad',
         'Abdul Basit',
         'Abdul Samad',
@@ -99,6 +126,8 @@ class ReciterNormalizer {
       'Mahmoud Khalil Al-Husary': [
         'Mahmoud Khalil Al-Husary',
         'Mahmoud Khalil Al-Husari',
+        'Mahmoud Khaleel Al-Husary',
+        'Mahmoud Khalil Al-Hussary',
         'Mahmoud Al-Husary',
         'Khalil Al-Husary',
         'Al-Husari',
@@ -109,6 +138,7 @@ class ReciterNormalizer {
       ],
       'Mohamed Siddiq Al-Minshawi': [
         'Mohamed Siddiq Al-Minshawi',
+        'Mohammed Siddiq Al-Minshawi',
         'Muhammad Siddiq al-Minshawi',
         'Mohamed Siddiq el-Minshawi',
         'Siddiq Al-Minshawi',
@@ -120,6 +150,7 @@ class ReciterNormalizer {
         'Ahmed al-Ajami',
         'Ahmed ibn Ali al-Ajamy',
         'Ahmed al-Ajmy',
+        'Ahmed Alajmi',
         'Ajmi',
         'Ajami',
         'Ajamy',
@@ -128,6 +159,7 @@ class ReciterNormalizer {
         'Saad Al-Ghamdi',
         'Saad el-Ghamidi',
         'Saad Ghamdi',
+        'Saad Alghamdi',
         'Ghamdi',
         'Ghamidi',
       ],
@@ -135,6 +167,7 @@ class ReciterNormalizer {
         'Maher Al-Muaiqly',
         'Maher al-Meaqli',
         'Maher Muaiqly',
+        'Maher Almuaiqly',
         'Al-Muaiqly',
         'Muaiqly',
       ],
@@ -142,6 +175,7 @@ class ReciterNormalizer {
         'Abu Bakr Al-Shatri',
         'Abu Bakr ash-Shaatree',
         'Abu Bakr Shaatree',
+        'Shaik Abu Bakr Al Shatri',
         'Shatri',
         'Shaatree',
       ],
@@ -149,6 +183,7 @@ class ReciterNormalizer {
         'Yasser Al-Dosari',
         'Yasser ad-Dossari',
         'Yasser ad-Dussary',
+        'Yasser Aldosari',
         'Yasser Dossari',
       ],
       'Abdullah Awad Al-Juhani': [
@@ -156,13 +191,16 @@ class ReciterNormalizer {
         'Abdullah Awad al-Juhanee',
         'Abdullaah 3awwaad al-Juhaynee',
         'Abdullah al-Juhani',
+        'Abdullah Aljuhani',
         'Al-Juhani',
         'Juhani',
       ],
       'Abdullah Basfar': [
         'Abdullah Basfar',
         'Abdullaah Basfar',
+        'Abdullah Basfer',
         'Basfar',
+        'Basfer',
       ],
       'Ali Al-Hudhaify': [
         'Ali Al-Hudhaify',
@@ -183,20 +221,24 @@ class ReciterNormalizer {
       'Nasser Al-Qatami': [
         'Nasser Al-Qatami',
         'Nasser al-Qatamy',
+        'Nasser Alqatami',
         'Qatami',
       ],
       'Salah Al-Budair': [
         'Salah Al-Budair',
         'Salah al-Bedair',
+        'Salah Albudair',
         'Budair',
       ],
       'Mohamed Al-Tablawi': [
         'Mohamed Al-Tablawi',
         'Mohamed Tablawi',
+        'Mohamed Altablawi',
         'Tablawi',
       ],
       'Mahmoud Ali Al-Banna': [
         'Mahmoud Ali Al-Banna',
+        'Mahmood Ali Al-Bana',
         'Mahmoud el-Banna',
         'Al-Banna',
         'Banna',
@@ -239,10 +281,12 @@ class ReciterNormalizer {
       'Abdul Aziz Al-Zahrani': [
         'Abdul Aziz az-Zahrani',
         'Abdul Aziz Al-Zahrani',
+        'Abdulaziz Az-Zahrani',
       ],
       'Abdullah Al-Matrood': [
         'Abdullah Al-Matrood',
-        'Abdullah Matrood',
+        'Abdullah Matroud',
+        'Abdullah Al-Mattrod',
       ],
       'Abdullah Al-Khulaifi': [
         'Abdullah Al-Khulaifi',
@@ -251,6 +295,84 @@ class ReciterNormalizer {
       'Abdur-Rasheed Sufi': [
         'Abdur-Rasheed Sufi',
         'Abdul Rasheed Sufi',
+        'Abdulrasheed Soufi',
+        'Abdur-Rashid Sufi',
+      ],
+      'Abdul Bari Al-Thubaity': [
+        'Abdul Bari ath-Thubaity',
+        'AbdulBari ath-Thubaity',
+        'Abdulbari Al-Thubaity',
+      ],
+      'Abdul Kareem Al-Hazmi': [
+        'Abdul Kareem al-Hazmi',
+        'AbdulKareem Al Hazmi',
+        'Abdulkareem Al-Hazmi',
+      ],
+      'Abdul Mohsen Al-Harthy': [
+        'Abdul Mohsen al-Harthy',
+        'Abdulmohsin Al-Harthy',
+      ],
+      'Abdul Wadood Haneef': [
+        'Abdul Wadood Haneef',
+        'AbdulWadood Haneef',
+        'AbdulWadud Haneef',
+        'Abdulwadood Haneef',
+      ],
+      'Abdul Muhsin Al-Qasim': [
+        'AbdulMuhsin al-Qasim',
+        'Abdulmohsen Al-Qasim',
+      ],
+      'Abdullah Ali Jabir': [
+        'Abdullah Ali Jabir',
+        'Ali Jabir',
+      ],
+      'Abdullah Khayat': [
+        'Abdullah Khayat',
+        'Abdullah Khayyat',
+      ],
+      'Adil Al-Kalbani': [
+        'Adil al-Kalbani',
+        'Adel Kalbani',
+      ],
+      'Ahmad Al-Hawashi': [
+        'Ahmad Al-Hawashi',
+        'Ahmad al-Hawashy',
+      ],
+      'Ahmed Amir': [
+        'Ahmed Amir',
+        'Ahmed Amer',
+      ],
+      'Al-Hussayni Al-Azazi': [
+        'Al-Hussayni Al-Azazi',
+        'Alhusayni Al-Azazi',
+      ],
+      'Al-Ashry Omran': [
+        'Al-Ashry Omran',
+        'Alashri Omran',
+      ],
+      'Hasan Saleh': [
+        'Hasan Saleh',
+        'Hassan Saleh',
+      ],
+      'Ibrahim Al-Jibrin': [
+        'Ibrahim Al-Jibrin',
+        'Ibrahim Al-Jebreen',
+      ],
+      'Khalid Al-Qahtani': [
+        'Khalid Al-Qahtani',
+        'Khaled Al-Qahtani',
+      ],
+      'Khalid Abdul-Kafi': [
+        'Khalid Abdul-Kafi',
+        'Khalid Abdulkafi',
+      ],
+      'Maher Shakhashiro': [
+        'Maher Shakhashiro',
+        'Maher Shakhashero',
+      ],
+      'Mahmood Al-Rifai': [
+        'Mahmood Al-Rifai',
+        'Mahmoud al-Rifai',
       ],
     };
 
@@ -269,7 +391,6 @@ class ReciterNormalizer {
 
   /// Returns the cleaned, standardized canonical English name for a given raw name.
   static String getCanonicalName(String rawName) {
-    final cleaned = cleanRawName(rawName);
     final key = getMatchKey(rawName);
 
     // 1. Direct match in canonical dictionary
@@ -277,41 +398,53 @@ class ReciterNormalizer {
       return _canonicalMap[key]!;
     }
 
-    // 2. Check if key contains canonical key or vice versa (for multi-part variants)
-    for (final entry in _canonicalMap.entries) {
-      if (entry.key.length >= 5) {
-        if (key.contains(entry.key) || entry.key.contains(key)) {
-          return entry.value;
-        }
-      }
-    }
-
-    // 3. Fallback: Format cleaned name with proper Title Case
-    return _formatNameTitleCase(cleaned);
+    // 2. Fallback: Clean and format with classical conventions
+    return _formatClassicalName(cleanRawName(rawName));
   }
 
-  /// Capitalize words properly
-  static String _formatNameTitleCase(String name) {
-    if (name.isEmpty) return name;
-    final words = name.split(' ');
+  /// Format an uncatalogued name using standard Islamic transliteration rules
+  static String _formatClassicalName(String raw) {
+    var s = raw.trim();
+    if (s.isEmpty) return s;
+
+    // Split Abdul[X] -> Abdul [X]
+    s = s.replaceAllMapped(
+      RegExp(r'\b(abdel|abdur|abdul)([a-z]{3,})\b', caseSensitive: false),
+      (m) => 'Abdul ${m[2]![0].toUpperCase()}${m[2]!.substring(1).toLowerCase()}',
+    );
+
+    // Split Al[X] -> Al-[X]
+    s = s.replaceAllMapped(
+      RegExp(r'\b(al|el)([a-z]{3,})\b', caseSensitive: false),
+      (m) {
+        final rest = m[2]!;
+        if (rest.toLowerCase().startsWith('afas')) return 'Alafasy';
+        if (rest.toLowerCase() == 'sudaes') return 'Al-Sudais';
+        return 'Al-${rest[0].toUpperCase()}${rest.substring(1).toLowerCase()}';
+      },
+    );
+
+    // Standard title casing
+    final words = s.split(' ');
     final result = <String>[];
 
     for (var w in words) {
       if (w.isEmpty) continue;
       if (w.contains('-')) {
         final subParts = w.split('-');
-        final formattedSubs = subParts.map((s) {
-          if (s.isEmpty) return '';
-          if (s.toLowerCase() == 'al' || s.toLowerCase() == 'as' || s.toLowerCase() == 'el') {
+        final formattedSubs = subParts.map((sub) {
+          if (sub.isEmpty) return '';
+          if (sub.toLowerCase() == 'al' || sub.toLowerCase() == 'as' || sub.toLowerCase() == 'el') {
             return 'Al';
           }
-          return s[0].toUpperCase() + s.substring(1).toLowerCase();
+          return sub[0].toUpperCase() + sub.substring(1).toLowerCase();
         }).toList();
         result.add(formattedSubs.join('-'));
       } else {
-        if (w.toLowerCase() == 'al' || w.toLowerCase() == 'el') {
+        final lower = w.toLowerCase();
+        if (lower == 'al' || lower == 'el') {
           result.add('Al');
-        } else if (w.toLowerCase() == 'bin' || w.toLowerCase() == 'ibn') {
+        } else if (lower == 'bin' || lower == 'ibn') {
           result.add('bin');
         } else {
           result.add(w[0].toUpperCase() + w.substring(1).toLowerCase());

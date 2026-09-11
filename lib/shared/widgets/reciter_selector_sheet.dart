@@ -263,16 +263,7 @@ class _ReciterSelectorSheetState extends State<ReciterSelectorSheet> {
                               ),
                               onTap: () {
                                 playlist.selectReciter(reciter.id);
-
-                                // If player is currently playing a surah, reload with new reciter
-                                if (player.currentSurah != null) {
-                                  player.loadAndPlay(
-                                    surah: player.currentSurah!,
-                                    reciter: reciter,
-                                    index: player.currentIndex,
-                                  );
-                                }
-
+                                player.selectReciter(reciter);
                                 Navigator.pop(context);
                               },
                             );

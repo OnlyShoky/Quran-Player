@@ -1,5 +1,16 @@
 import 'audio_api_source.dart';
 
+/// A candidate audio source paired with its provider API.
+class CandidateAudioSource {
+  final AudioApiSource apiSource;
+  final String url;
+
+  const CandidateAudioSource({
+    required this.apiSource,
+    required this.url,
+  });
+}
+
 /// Represents a Quran reciter, possibly aggregated across multiple audio providers.
 class Reciter {
   final int id;
@@ -53,19 +64,28 @@ class Reciter {
 
   /// Returns candidate audio URLs across all integrated providers for fallback playback.
   List<String> getAllCandidateAudioUrls(int surahId) {
+    return getAllCandidateAudioSources(surahId).map((s) => s.url).toList();
+  }
+
+  /// Returns candidate audio sources across all integrated providers for fallback playback.
+  List<CandidateAudioSource> getAllCandidateAudioSources(int surahId) {
     if (audioSources.isEmpty) {
       final defaultUrl = getAudioUrl(surahId);
-      return defaultUrl.isNotEmpty ? [defaultUrl] : [];
+      return defaultUrl.isNotEmpty
+          ? [CandidateAudioSource(apiSource: AudioApiSource.mp3Quran, url: defaultUrl)]
+          : [];
     }
 
-    final urls = <String>[];
+    final list = <CandidateAudioSource>[];
+    final seenUrls = <String>{};
     for (final src in audioSources) {
       final u = src.getAudioUrl(surahId);
-      if (u.isNotEmpty && !urls.contains(u)) {
-        urls.add(u);
+      if (u.isNotEmpty && !seenUrls.contains(u)) {
+        seenUrls.add(u);
+        list.add(CandidateAudioSource(apiSource: src.apiSource, url: u));
       }
     }
-    return urls;
+    return list;
   }
 
   /// Copies this reciter with additional or updated audio sources.
@@ -111,13 +131,28 @@ class Reciter {
     String style = '';
 
     if (json['moshaf'] != null && (json['moshaf'] as List).isNotEmpty) {
-      final moshaf = json['moshaf'][0];
-      serverUrl = moshaf['server'] ?? '';
-      final moshafName = moshaf['name'] as String? ?? '';
-      if (moshafName.toLowerCase().contains('mujawwad')) {
-        style = 'Mujawwad';
-      } else {
-        style = 'Murattal';
+      final moshafList = (json['moshaf'] as List).whereType<Map<String, dynamic>>().toList();
+      if (moshafList.isNotEmpty) {
+        moshafList.sort((a, b) {
+          final aTotal = (a['surah_total'] as num?)?.toInt() ?? 0;
+          final bTotal = (b['surah_total'] as num?)?.toInt() ?? 0;
+          final aHafs = (a['name'] as String? ?? '').toLowerCase().contains('hafs');
+          final bHafs = (b['name'] as String? ?? '').toLowerCase().contains('hafs');
+          if (aTotal == 114 && bTotal != 114) return -1;
+          if (bTotal == 114 && aTotal != 114) return 1;
+          if (aHafs && !bHafs && aTotal > 0) return -1;
+          if (!aHafs && bHafs && bTotal > 0) return 1;
+          return bTotal.compareTo(aTotal);
+        });
+
+        final moshaf = moshafList.first;
+        serverUrl = moshaf['server'] ?? '';
+        final moshafName = moshaf['name'] as String? ?? '';
+        if (moshafName.toLowerCase().contains('mujawwad')) {
+          style = 'Mujawwad';
+        } else {
+          style = 'Murattal';
+        }
       }
     }
 

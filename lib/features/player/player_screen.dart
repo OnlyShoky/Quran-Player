@@ -6,6 +6,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../shared/providers/playlist_provider.dart';
 import '../../shared/providers/player_provider.dart';
+import '../../shared/providers/settings_provider.dart';
 import '../../shared/widgets/reciter_selector_sheet.dart';
 import '../../shared/widgets/playback_mode_button.dart';
 
@@ -24,6 +25,7 @@ class PlayerScreen extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final playlist = context.watch<PlaylistProvider>();
     final player = context.watch<PlayerProvider>();
+    final settings = context.watch<SettingsProvider>();
 
     if (playlist.items.isEmpty && player.currentSurah == null) {
       return Scaffold(
@@ -186,6 +188,8 @@ class PlayerScreen extends StatelessWidget {
                 ),
               ),
             ),
+
+
 
             const SizedBox(height: 8),
 
@@ -353,6 +357,43 @@ class PlayerScreen extends StatelessWidget {
             ),
 
             const Spacer(flex: 2),
+
+            // --- Bottom bar with API indicator tucked into bottom-left ---
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Row(
+                children: [
+                  if (settings.showApiSourceInPlayer && player.currentAudioSource != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.cloud_outlined,
+                            size: 13,
+                            color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            player.currentAudioSource!.displayName,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const Spacer(),
+                ],
+              ),
+            ),
           ],
         ),
       ),

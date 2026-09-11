@@ -116,6 +116,8 @@ class AppLocalizations {
       'api_quranicaudio_desc': 'High-fidelity audio collection by Quran Foundation.',
       'api_alqurancloud_desc': 'Fast global CDN delivery by Islamic Network.',
       'cannot_disable_all_sources': 'At least one audio source must remain active.',
+      'show_api_source_in_player': 'Show active API in player',
+      'show_api_source_in_player_desc': 'Display the streaming provider badge on the player screen',
     },
     'es': {
       'app_title': 'Quran Player',
@@ -212,6 +214,8 @@ class AppLocalizations {
       'api_quranicaudio_desc': 'Colección de audio de alta fidelidad por Quran Foundation.',
       'api_alqurancloud_desc': 'Entrega rápida a través de CDN global por Islamic Network.',
       'cannot_disable_all_sources': 'Debe permanecer activa al menos una fuente de audio.',
+      'show_api_source_in_player': 'Mostrar API activa en reproductor',
+      'show_api_source_in_player_desc': 'Muestra la insignia del proveedor en la pantalla del reproductor',
     },
     'fr': {
       'app_title': 'Quran Player',
@@ -308,6 +312,8 @@ class AppLocalizations {
       'api_quranicaudio_desc': 'Collection audio haute fidélité par Quran Foundation.',
       'api_alqurancloud_desc': 'Diffusion CDN mondiale rapide par Islamic Network.',
       'cannot_disable_all_sources': 'Au moins une source audio doit rester active.',
+      'show_api_source_in_player': 'Afficher l\'API active dans le lecteur',
+      'show_api_source_in_player_desc': 'Affiche le badge du fournisseur audio sur l\'écran du lecteur',
     },
     'ar': {
       'app_title': 'قارئ القرآن',
@@ -403,6 +409,8 @@ class AppLocalizations {
       'api_quranicaudio_desc': 'تسجيلات نقية وعالية الجودة من مؤسسة Quran Foundation.',
       'api_alqurancloud_desc': 'شبكة توزيع محتوى عالمية سريعة من Islamic Network.',
       'cannot_disable_all_sources': 'يجب الإبقاء على مصدر صوتي واحد على الأقل نَشِطاً.',
+      'show_api_source_in_player': 'عرض مصدر الصوت في المشغل',
+      'show_api_source_in_player_desc': 'إظهار اسم الخادم الصوتي الحالي في شاشة المشغل',
     },
   };
 

@@ -234,6 +234,29 @@ class SettingsScreen extends StatelessWidget {
                   }
                 },
               ),
+              Divider(height: 1, color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+              SwitchListTile.adaptive(
+                value: settings.showApiSourceInPlayer,
+                onChanged: (val) => settings.setShowApiSourceInPlayer(val),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                title: Text(
+                  context.tr('show_api_source_in_player'),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    context.tr('show_api_source_in_player_desc'),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
+                      height: 1.3,
+                    ),
+                  ),
+                ),
+                activeTrackColor: isDark ? AppColors.primaryDark : AppColors.primaryLight,
+              ),
             ],
           ),
 

@@ -920,13 +920,7 @@ class _ReciterSelectorHeader extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14),
                     onTap: () {
                       playlist.selectReciter(r.id);
-                      if (player.currentSurah != null) {
-                        player.loadAndPlay(
-                          surah: player.currentSurah!,
-                          reciter: r,
-                          index: player.currentIndex,
-                        );
-                      }
+                      player.selectReciter(r);
                     },
                     child: Container(
                       height: 54,

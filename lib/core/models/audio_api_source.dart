@@ -4,10 +4,9 @@ import 'package:flutter/foundation.dart';
 enum AudioApiSource {
   mp3Quran,
   quranicAudio,
-  alQuranCloud,
-}
+  alQuranCloud;
 
-extension AudioApiSourceExtension on AudioApiSource {
+  /// Returns the identifier string for the API source.
   String get id {
     switch (this) {
       case AudioApiSource.mp3Quran:
@@ -19,6 +18,7 @@ extension AudioApiSourceExtension on AudioApiSource {
     }
   }
 
+  /// Human‑readable display name.
   String get displayName {
     switch (this) {
       case AudioApiSource.mp3Quran:
@@ -30,6 +30,7 @@ extension AudioApiSourceExtension on AudioApiSource {
     }
   }
 
+  /// Description of the API source.
   String get description {
     switch (this) {
       case AudioApiSource.mp3Quran:
@@ -41,6 +42,7 @@ extension AudioApiSourceExtension on AudioApiSource {
     }
   }
 
+  /// Static helper to create an enum from an identifier.
   static AudioApiSource? fromId(String id) {
     switch (id.toLowerCase()) {
       case 'mp3quran':

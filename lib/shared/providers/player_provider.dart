@@ -4,6 +4,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:audio_session/audio_session.dart';
 import '../../core/models/surah.dart';
 import '../../core/models/reciter.dart';
+import '../../core/models/audio_api_source.dart';
 import 'playlist_provider.dart';
 import 'settings_provider.dart';
 
@@ -21,6 +22,7 @@ class PlayerProvider extends ChangeNotifier {
   Surah? _currentSurah;
   Reciter? _currentReciter;
   String? _currentAudioUrl;
+  AudioApiSource? _currentAudioSource;
   String? _errorMessage;
 
   StreamSubscription? _playerStateSub;
@@ -43,6 +45,7 @@ class PlayerProvider extends ChangeNotifier {
   bool get isPlaying => _state == PlaybackState.playing;
   bool get isBuffering => _state == PlaybackState.buffering;
   bool get isDismissed => _isDismissed;
+  AudioApiSource? get currentAudioSource => _currentAudioSource;
 
   Surah? get currentSurah {
     if (_currentSurah != null) return _currentSurah;
@@ -99,6 +102,7 @@ class PlayerProvider extends ChangeNotifier {
         _audioPlayer.stop();
         _currentSurah = null;
         _currentAudioUrl = null;
+        _currentAudioSource = null;
         _state = PlaybackState.stopped;
         _currentIndex = 0;
         _position = Duration.zero;
@@ -118,6 +122,7 @@ class PlayerProvider extends ChangeNotifier {
         _audioPlayer.stop();
         _currentSurah = null;
         _currentAudioUrl = null;
+        _currentAudioSource = null;
         _state = PlaybackState.stopped;
         _currentIndex = 0;
         _position = Duration.zero;
@@ -217,6 +222,21 @@ class PlayerProvider extends ChangeNotifier {
     }
   }
 
+  /// Switch the active reciter. If a track is active or playing, reload it with the new reciter.
+  void selectReciter(Reciter reciter) {
+    _currentReciter = reciter;
+    final activeSurah = currentSurah;
+    if (activeSurah != null) {
+      loadAndPlay(
+        surah: activeSurah,
+        reciter: reciter,
+        index: _currentIndex,
+      );
+    } else {
+      notifyListeners();
+    }
+  }
+
   /// Construct audio URL for primary source
   String getAudioUrl(Surah surah, Reciter reciter) {
     return reciter.getAudioUrl(surah.id);
@@ -233,46 +253,49 @@ class PlayerProvider extends ChangeNotifier {
     _currentReciter = reciter;
     _errorMessage = null;
 
-    final candidateUrls = reciter.getAllCandidateAudioUrls(surah.id);
-    if (candidateUrls.isEmpty) {
+    final candidates = reciter.getAllCandidateAudioSources(surah.id);
+    if (candidates.isEmpty) {
       final defaultUrl = getAudioUrl(surah, reciter);
       if (defaultUrl.isNotEmpty) {
-        candidateUrls.add(defaultUrl);
+        candidates.add(CandidateAudioSource(
+          apiSource: AudioApiSource.mp3Quran,
+          url: defaultUrl,
+        ));
       }
     }
 
     _state = PlaybackState.buffering;
     notifyListeners();
 
+    // Cleanly stop any existing playback before setting a new audio source
+    try {
+      await _audioPlayer.stop();
+    } catch (_) {}
+
     String? lastError;
     bool succeeded = false;
 
-    for (var i = 0; i < candidateUrls.length; i++) {
-      final url = candidateUrls[i];
-      _currentAudioUrl = url;
+    for (var i = 0; i < candidates.length; i++) {
+      final candidate = candidates[i];
+      _currentAudioUrl = candidate.url;
 
       try {
         await _audioPlayer.setAudioSource(
-          AudioSource.uri(Uri.parse(url)),
+          AudioSource.uri(Uri.parse(candidate.url)),
           preload: true,
         );
         await _audioPlayer.play();
+        _currentAudioSource = candidate.apiSource;
         succeeded = true;
         break;
       } catch (e) {
-        final errStr = e.toString().toLowerCase();
-        if (errStr.contains('loading interrupted') ||
-            errStr.contains('interrupted') ||
-            errStr.contains('abort')) {
-          debugPrint('Audio loading interrupted (ignored): $e');
-          return;
-        }
         lastError = e.toString();
-        debugPrint('Candidate audio source $i failed ($url): $e. Attempting fallback if available.');
+        debugPrint('Candidate audio source $i failed (${candidate.url}): $e. Attempting fallback if available.');
       }
     }
 
     if (!succeeded) {
+      _currentAudioSource = null;
       _errorMessage = 'Failed to load audio: $lastError';
       _state = PlaybackState.stopped;
       notifyListeners();
@@ -313,6 +336,7 @@ class PlayerProvider extends ChangeNotifier {
     _currentSurah = null;
     _currentReciter = null;
     _currentAudioUrl = null;
+    _currentAudioSource = null;
     _isDismissed = true;
     _position = Duration.zero;
     _progress = 0.0;
