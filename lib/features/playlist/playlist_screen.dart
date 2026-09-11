@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+
 import '../../core/constants/app_colors.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../shared/providers/playlist_provider.dart';
@@ -30,7 +31,10 @@ class PlaylistScreen extends StatelessWidget {
             title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(context.tr('playlist_title'), style: theme.textTheme.titleLarge),
+                Text(
+                  context.tr('playlist_title'),
+                  style: theme.textTheme.titleLarge,
+                ),
                 InkWell(
                   onTap: () => showReciterSelectorModal(context),
                   child: Row(
@@ -61,7 +65,9 @@ class PlaylistScreen extends StatelessWidget {
                   child: Text(
                     context.tr('clear_all'),
                     style: TextStyle(
-                      color: isDark ? AppColors.errorDark : AppColors.errorLight,
+                      color: isDark
+                          ? AppColors.errorDark
+                          : AppColors.errorLight,
                     ),
                   ),
                 ),
@@ -69,9 +75,7 @@ class PlaylistScreen extends StatelessWidget {
           ),
 
           if (playlist.items.isEmpty)
-            SliverFillRemaining(
-              child: _EmptyPlaylist(),
-            )
+            SliverFillRemaining(child: _EmptyPlaylist())
           else ...[
             // Summary header & Play action
             SliverToBoxAdapter(
@@ -83,7 +87,9 @@ class PlaylistScreen extends StatelessWidget {
                     Text(
                       '${playlist.items.length} surah${playlist.items.length == 1 ? '' : 's'}',
                       style: theme.textTheme.labelMedium?.copyWith(
-                        color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
+                        color: isDark
+                            ? AppColors.mutedDark
+                            : AppColors.mutedLight,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -108,7 +114,10 @@ class PlaylistScreen extends StatelessWidget {
                       ),
                       style: FilledButton.styleFrom(
                         visualDensity: VisualDensity.compact,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 6,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
                         ),
@@ -121,78 +130,76 @@ class PlaylistScreen extends StatelessWidget {
 
             // Playlist items
             SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final item = playlist.items[index];
-                  final surah = playlist.surahById(item.surahId);
-                  if (surah == null) return const SizedBox.shrink();
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final item = playlist.items[index];
+                final surah = playlist.surahById(item.surahId);
+                if (surah == null) return const SizedBox.shrink();
 
-                  final isCurrentlyPlaying =
-                      player.currentIndex == index && player.isPlaying;
+                final isCurrentlyPlaying =
+                    player.currentIndex == index && player.isPlaying;
 
-                  return Dismissible(
-                    key: ValueKey('playlist-${surah.id}'),
-                    direction: DismissDirection.endToStart,
-                    background: Container(
-                      alignment: Alignment.centerRight,
-                      padding: const EdgeInsets.only(right: 20),
+                return Dismissible(
+                  key: ValueKey('playlist-${surah.id}'),
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 20),
+                    color: isDark
+                        ? AppColors.errorDark.withValues(alpha: 0.15)
+                        : AppColors.errorLight.withValues(alpha: 0.12),
+                    child: Icon(
+                      Icons.delete_outline_rounded,
                       color: isDark
-                          ? AppColors.errorDark.withValues(alpha: 0.15)
-                          : AppColors.errorLight.withValues(alpha: 0.12),
-                      child: Icon(
-                        Icons.delete_outline_rounded,
-                        color: isDark ? AppColors.errorDark : AppColors.errorLight,
+                          ? AppColors.errorDark
+                          : AppColors.errorLight,
+                    ),
+                  ),
+                  onDismissed: (_) {
+                    final idx = playlist.indexOfSurah(surah.id);
+                    final removed = playlist.removeSurah(surah.id);
+                    if (removed != null && context.mounted) {
+                      showAppSnackBar(
+                        context,
+                        '${surah.nameEn} removed',
+                        action: SnackBarAction(
+                          label: 'Undo',
+                          onPressed: () => playlist.undoRemove(removed, idx),
+                        ),
+                      );
+                    }
+                  },
+                  child: Column(
+                    children: [
+                      _PlaylistItemTile(
+                        index: index,
+                        surahNameEn: surah.nameEn,
+                        surahSubtitle: surah.localizedTranslation(context),
+                        surahNameAr: surah.nameAr,
+                        surahId: surah.id,
+                        isPlaying: isCurrentlyPlaying,
+                        onTap: () {
+                          if (reciter != null) {
+                            player.loadAndPlay(
+                              surah: surah,
+                              reciter: reciter,
+                              index: index,
+                            );
+                            context.go('/player');
+                          }
+                        },
                       ),
-                    ),
-                    onDismissed: (_) {
-                      final idx = playlist.indexOfSurah(surah.id);
-                      final removed = playlist.removeSurah(surah.id);
-                      if (removed != null && context.mounted) {
-                        showAppSnackBar(
-                          context,
-                          '${surah.nameEn} removed',
-                          action: SnackBarAction(
-                            label: 'Undo',
-                            onPressed: () =>
-                                playlist.undoRemove(removed, idx),
-                          ),
-                        );
-                      }
-                    },
-                    child: Column(
-                      children: [
-                        _PlaylistItemTile(
-                          index: index,
-                          surahNameEn: surah.nameEn,
-                          surahSubtitle: surah.localizedTranslation(context),
-                          surahNameAr: surah.nameAr,
-                          surahId: surah.id,
-                          isPlaying: isCurrentlyPlaying,
-                          onTap: () {
-                            if (reciter != null) {
-                              player.loadAndPlay(
-                                surah: surah,
-                                reciter: reciter,
-                                index: index,
-                              );
-                              context.go('/player');
-                            }
-                          },
-                        ),
-                        Divider(
-                          indent: 56,
-                          endIndent: 16,
-                          height: 1,
-                          color: isDark
-                              ? AppColors.outlineDark
-                              : AppColors.outlineLight,
-                        ),
-                      ],
-                    ),
-                  );
-                },
-                childCount: playlist.items.length,
-              ),
+                      Divider(
+                        indent: 56,
+                        endIndent: 16,
+                        height: 1,
+                        color: isDark
+                            ? AppColors.outlineDark
+                            : AppColors.outlineLight,
+                      ),
+                    ],
+                  ),
+                );
+              }, childCount: playlist.items.length),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
           ],
@@ -205,7 +212,8 @@ class PlaylistScreen extends StatelessWidget {
                 child: FilledButton.icon(
                   onPressed: () {
                     if (reciter != null) {
-                      final targetIndex = player.currentIndex < playlist.items.length
+                      final targetIndex =
+                          player.currentIndex < playlist.items.length
                           ? player.currentIndex
                           : 0;
                       final targetItem = playlist.items[targetIndex];
@@ -223,12 +231,14 @@ class PlaylistScreen extends StatelessWidget {
                       }
                     }
                   },
-                  icon: Icon(player.isPlaying
-                      ? Icons.pause_rounded
-                      : Icons.play_arrow_rounded),
-                  label: Text(player.isPlaying
-                      ? context.tr('pause')
-                      : context.tr('play')),
+                  icon: Icon(
+                    player.isPlaying
+                        ? Icons.pause_rounded
+                        : Icons.play_arrow_rounded,
+                  ),
+                  label: Text(
+                    player.isPlaying ? context.tr('pause') : context.tr('play'),
+                  ),
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(52),
                     shape: RoundedRectangleBorder(
@@ -300,14 +310,18 @@ class _PlaylistItemTile extends StatelessWidget {
             SizedBox(
               width: 32,
               child: isPlaying
-                  ? Icon(Icons.graphic_eq_rounded,
-                      color: theme.colorScheme.primary, size: 20)
+                  ? Icon(
+                      Icons.graphic_eq_rounded,
+                      color: theme.colorScheme.primary,
+                      size: 20,
+                    )
                   : Text(
                       '${index + 1}',
                       textAlign: TextAlign.center,
                       style: theme.textTheme.labelMedium?.copyWith(
-                        color:
-                            isDark ? AppColors.mutedDark : AppColors.mutedLight,
+                        color: isDark
+                            ? AppColors.mutedDark
+                            : AppColors.mutedLight,
                       ),
                     ),
             ),
@@ -326,9 +340,11 @@ class _PlaylistItemTile extends StatelessWidget {
                   ),
                   if (surahSubtitle != null)
                     Text(
-                      surahSubtitle!,
+                      '${surahSubtitle!} · $surahId',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
+                        color: isDark
+                            ? AppColors.mutedDark
+                            : AppColors.mutedLight,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -363,9 +379,7 @@ class _EmptyPlaylist extends StatelessWidget {
           Icon(
             Icons.queue_music_rounded,
             size: 72,
-            color: isDark
-                ? AppColors.outlineDark
-                : AppColors.outlineLight,
+            color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
           ),
           const SizedBox(height: 20),
           Text(

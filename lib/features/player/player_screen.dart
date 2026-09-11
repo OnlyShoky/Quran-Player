@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+
 import '../../core/constants/app_colors.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../shared/providers/playlist_provider.dart';
@@ -58,7 +59,8 @@ class PlayerScreen extends StatelessWidget {
       playlist.items.isEmpty ? 0 : playlist.items.length - 1,
     );
 
-    final surah = player.currentSurah ??
+    final surah =
+        player.currentSurah ??
         (playlist.items.isNotEmpty
             ? playlist.surahById(playlist.items[currentIndex].surahId)
             : null);
@@ -92,7 +94,10 @@ class PlayerScreen extends StatelessWidget {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 32),
+                    icon: const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 32,
+                    ),
                     onPressed: () {
                       if (context.canPop()) {
                         context.pop();
@@ -106,7 +111,9 @@ class PlayerScreen extends StatelessWidget {
                   Text(
                     context.tr('now_playing'),
                     style: theme.textTheme.labelLarge?.copyWith(
-                      color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
+                      color: isDark
+                          ? AppColors.mutedDark
+                          : AppColors.mutedLight,
                     ),
                   ),
                   const Spacer(),
@@ -145,18 +152,35 @@ class PlayerScreen extends StatelessWidget {
             const SizedBox(height: 12),
 
             // --- English name ---
-            Text(
-              surah.nameEn,
-              style: theme.textTheme.headlineMedium,
-            ),
+            Text(surah.nameEn, style: theme.textTheme.headlineMedium),
 
             // --- Translation ---
             const SizedBox(height: 4),
-            Text(
-              surah.localizedTranslation(context),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  surah.localizedTranslation(context),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  '·',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  '${surah.id}',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
 
             const SizedBox(height: 12),
@@ -165,7 +189,10 @@ class PlayerScreen extends StatelessWidget {
             GestureDetector(
               onTap: () => showReciterSelectorModal(context),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.primary.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20),
@@ -173,7 +200,11 @@ class PlayerScreen extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.mic_rounded, size: 16, color: theme.colorScheme.primary),
+                    Icon(
+                      Icons.mic_rounded,
+                      size: 16,
+                      color: theme.colorScheme.primary,
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       reciter?.name ?? context.tr('select_reciter'),
@@ -183,13 +214,15 @@ class PlayerScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 4),
-                    Icon(Icons.unfold_more_rounded, size: 14, color: theme.colorScheme.primary),
+                    Icon(
+                      Icons.unfold_more_rounded,
+                      size: 14,
+                      color: theme.colorScheme.primary,
+                    ),
                   ],
                 ),
               ),
             ),
-
-
 
             const SizedBox(height: 8),
 
@@ -279,7 +312,9 @@ class PlayerScreen extends StatelessWidget {
                     size: 36,
                     color: currentIndex > 0
                         ? theme.colorScheme.onSurface
-                        : (isDark ? AppColors.outlineDark : AppColors.outlineLight),
+                        : (isDark
+                              ? AppColors.outlineDark
+                              : AppColors.outlineLight),
                     tooltip: context.tr('previous'),
                     onTap: player.skipPrevious,
                   ),
@@ -295,7 +330,9 @@ class PlayerScreen extends StatelessWidget {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.3,
+                            ),
                             blurRadius: 20,
                             offset: const Offset(0, 6),
                           ),
@@ -328,7 +365,9 @@ class PlayerScreen extends StatelessWidget {
                     size: 36,
                     color: currentIndex < playlist.items.length - 1
                         ? theme.colorScheme.onSurface
-                        : (isDark ? AppColors.outlineDark : AppColors.outlineLight),
+                        : (isDark
+                              ? AppColors.outlineDark
+                              : AppColors.outlineLight),
                     tooltip: context.tr('next'),
                     onTap: player.skipNext,
                   ),
@@ -337,11 +376,14 @@ class PlayerScreen extends StatelessWidget {
                   _ControlButton(
                     icon: Icons.stop_rounded,
                     size: 34,
-                    color: (player.isPlaying ||
+                    color:
+                        (player.isPlaying ||
                             player.state == PlaybackState.paused ||
                             player.isBuffering)
                         ? theme.colorScheme.onSurface
-                        : (isDark ? AppColors.outlineDark : AppColors.outlineLight),
+                        : (isDark
+                              ? AppColors.outlineDark
+                              : AppColors.outlineLight),
                     tooltip: context.tr('stop'),
                     onTap: () {
                       player.stop();
@@ -358,40 +400,48 @@ class PlayerScreen extends StatelessWidget {
 
             const Spacer(flex: 2),
 
-            // --- Bottom bar with API indicator tucked into bottom-left ---
+            // --- Bottom bar with centered API indicator ---
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              child: Row(
-                children: [
-                  if (settings.showApiSourceInPlayer && player.currentAudioSource != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.06),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.cloud_outlined,
-                            size: 13,
-                            color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            player.currentAudioSource!.displayName,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
+              padding: const EdgeInsets.only(bottom: 18),
+              child: Center(
+                child:
+                    settings.showApiSourceInPlayer &&
+                        player.currentAudioSource != null
+                    ? Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 9,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: (isDark ? Colors.white : Colors.black)
+                              .withValues(alpha: 0.06),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.cloud_outlined,
+                              size: 13,
+                              color: isDark
+                                  ? AppColors.mutedDark
+                                  : AppColors.mutedLight,
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  const Spacer(),
-                ],
+                            const SizedBox(width: 5),
+                            Text(
+                              player.currentAudioSource!.displayName,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: isDark
+                                    ? AppColors.mutedDark
+                                    : AppColors.mutedLight,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : const SizedBox.shrink(),
               ),
             ),
           ],
