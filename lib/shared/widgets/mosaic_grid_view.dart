@@ -26,9 +26,9 @@ class MosaicGridView extends StatelessWidget {
 
   /// ⚙️ TWEAK COLUMN COUNTS HERE:
   int _columnCount(double width) {
-    if (width < 360) return 4; // Mobile narrow: 4 columns
-    if (width < 500) return 5; // Mobile standard: 5 columns
-    if (width < 750) return 6; // Tablet / Wide: 6 columns
+    if (width < 420) return 3; // Phone: readable surah names
+    if (width < 650) return 4; // Large phone / small tablet
+    if (width < 750) return 5; // Tablet
     if (width < 1080) return 6; // Tablet / Wide: 6 columns
     return 19; // Large desktop: 8 columns
   }

@@ -169,7 +169,7 @@ void main() {
       expect(find.text('Appearance'), findsOneWidget);
       expect(find.text('Language'), findsOneWidget);
       expect(find.text('Playback'), findsNothing); // Playback was moved to player bars
-      expect(find.text('Tutorial & Help'), findsOneWidget);
+      expect(find.text('Tutorial & Help'), findsNothing);
       expect(find.text('About'), findsOneWidget);
 
       // Check languages are listed
@@ -184,13 +184,6 @@ void main() {
       await tester.pumpAndSettle();
       expect(settingsProvider.locale?.languageCode, 'es');
 
-      // Tap Reset Tutorial button
-      expect(find.text('Reset'), findsOneWidget);
-      await tester.tap(find.text('Reset'));
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 3));
-
-      expect(viewModeProvider.hasSeenTutorial, isFalse);
     });
 
     testWidgets('PlaybackModeButton toggles between Next and Repeat on tap',

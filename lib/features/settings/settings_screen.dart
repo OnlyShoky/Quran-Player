@@ -297,57 +297,6 @@ class SettingsScreen extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          // ================= TUTORIAL & HELP =================
-          _SectionHeader(
-            title: context.tr('section_tutorial'),
-            icon: Icons.help_outline_rounded,
-          ),
-          const SizedBox(height: 8),
-          _SettingsCard(
-            children: [
-              ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                leading: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF2A3D36) : const Color(0xFFE2EFEA),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.restart_alt_rounded,
-                    color: isDark ? AppColors.primaryDark : AppColors.primaryLight,
-                    size: 20,
-                  ),
-                ),
-                title: Text(
-                  context.tr('reset_tutorial_title'),
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                subtitle: Text(
-                  context.tr('reset_tutorial_desc'),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
-                  ),
-                ),
-                trailing: TextButton(
-                  onPressed: () async {
-                    await viewMode.resetTutorial();
-                    if (context.mounted) {
-                      showAppSnackBar(
-                        context,
-                        context.tr('reset_tutorial_success'),
-                      );
-                    }
-                  },
-                  child: Text(context.tr('reset')),
-                ),
-              ),
-            ],
-          ),
-
           // ================= ABOUT =================
           _SectionHeader(
             title: context.tr('section_about'),

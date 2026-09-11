@@ -276,6 +276,7 @@ class _ViewModeTutorialOverlayState extends State<ViewModeTutorialOverlay>
                               ),
                             ),
                             child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 Expanded(
                                   child: _ModePreviewItem(
@@ -325,15 +326,19 @@ class _ViewModeTutorialOverlayState extends State<ViewModeTutorialOverlay>
                                     widget.isMosaic
                                         ? context.tr('tutorial_try_list')
                                         : context.tr('tutorial_try_mosaic'),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
                                       color: primaryColor,
                                       fontWeight: FontWeight.w600,
-                                      fontSize: 13,
+                                      fontSize: 12,
                                     ),
                                   ),
                                   style: OutlinedButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(
-                                        vertical: 12),
+                                      horizontal: 10,
+                                      vertical: 12,
+                                    ),
                                     side: BorderSide(
                                       color: primaryColor.withValues(alpha: 0.5),
                                     ),
@@ -359,6 +364,8 @@ class _ViewModeTutorialOverlayState extends State<ViewModeTutorialOverlay>
                                   ),
                                   child: Text(
                                     context.tr('tutorial_got_it'),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13,
@@ -402,8 +409,9 @@ class _ModePreviewItem extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return Row(
+    return Column(
       mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
           width: 32,
@@ -428,10 +436,11 @@ class _ModePreviewItem extends StatelessWidget {
                 : (isDark ? AppColors.mutedDark : AppColors.mutedLight),
           ),
         ),
-        const SizedBox(width: 8),
-        Expanded(
+        const SizedBox(height: 6),
+        SizedBox(
+          width: double.infinity,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
@@ -444,6 +453,7 @@ class _ModePreviewItem extends StatelessWidget {
                           : AppColors.onSurfaceLight)
                       : (isDark ? AppColors.mutedDark : AppColors.mutedLight),
                 ),
+                textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
               ),
               Text(
@@ -452,6 +462,7 @@ class _ModePreviewItem extends StatelessWidget {
                   fontSize: 9.5,
                   color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
                 ),
+                textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
               ),
             ],

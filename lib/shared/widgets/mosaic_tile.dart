@@ -122,8 +122,8 @@ class _MosaicTileState extends State<MosaicTile> {
                 // `(tileSize * multiplier).clamp(minSize, maxSize)`
                 // =========================================================
                 final numSize = (tileSize * 0.15).clamp(9.0, 13.0);
-                final arabicSize = (tileSize * 0.38).clamp(25.0, 50.0);
-                final nameSize = (tileSize * 0.12).clamp(15.0, 20.0);
+                final arabicSize = (tileSize * 0.26).clamp(20.0, 34.0);
+                final nameSize = (tileSize * 0.095).clamp(11.0, 15.0);
 
                 return Stack(
                   children: [
@@ -167,10 +167,16 @@ class _MosaicTileState extends State<MosaicTile> {
 
                     // --- Centered content (Arabic + English name) ---
                     Positioned.fill(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(height: tileSize * 0.05),
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          top: tileSize * 0.19,
+                          left: tileSize * 0.06,
+                          right: tileSize * 0.06,
+                          bottom: tileSize * 0.07,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
                           // Arabic name (Center)
                           Text(
                             widget.surah.nameAr,
@@ -190,10 +196,7 @@ class _MosaicTileState extends State<MosaicTile> {
                           ),
                           SizedBox(height: tileSize * 0.02),
                           // English name (Bottom)
-                          Padding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: tileSize * 0.05,
-                            ),
+                          Flexible(
                             child: Text(
                               widget.surah.nameEn.toUpperCase(),
                               style: TextStyle(
@@ -205,14 +208,15 @@ class _MosaicTileState extends State<MosaicTile> {
                                     : (isDark
                                           ? AppColors.mutedDark
                                           : AppColors.mutedLight),
-                                letterSpacing: 0.2,
+                                letterSpacing: 0,
                               ),
                               textAlign: TextAlign.center,
-                              maxLines: 1,
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ],

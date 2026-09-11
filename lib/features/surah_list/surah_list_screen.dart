@@ -33,6 +33,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
   final GlobalKey _viewModeButtonKey = GlobalKey();
   OverlayEntry? _tutorialOverlayEntry;
   bool _tutorialScheduled = false;
+  Rect? _lastTutorialTargetRect;
   String _query = '';
   bool _showFilters = false;
   bool _isReversed = false;
@@ -106,6 +107,23 @@ class _SurahListScreenState extends State<SurahListScreen> {
     _tutorialOverlayEntry = null;
   }
 
+  void _scheduleTutorialCheck() {
+    if (_tutorialScheduled) return;
+    _tutorialScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _tutorialScheduled = false;
+      _checkAndShowTutorial();
+    });
+  }
+
+  bool _sameTarget(Rect first, Rect second) {
+    const tolerance = 0.5;
+    return (first.left - second.left).abs() < tolerance &&
+        (first.top - second.top).abs() < tolerance &&
+        (first.width - second.width).abs() < tolerance &&
+        (first.height - second.height).abs() < tolerance;
+  }
+
   void _checkAndShowTutorial() {
     if (!mounted || _tutorialOverlayEntry != null) return;
     final viewMode = context.read<ViewModeProvider>();
@@ -114,18 +132,32 @@ class _SurahListScreenState extends State<SurahListScreen> {
     final renderBox =
         _viewModeButtonKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null || !renderBox.hasSize) {
-      if (!_tutorialScheduled) {
-        _tutorialScheduled = true;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _tutorialScheduled = false;
-          _checkAndShowTutorial();
-        });
-      }
+      _scheduleTutorialCheck();
       return;
     }
 
-    final targetOffset = renderBox.localToGlobal(Offset.zero);
+    final overlay = Overlay.of(context, rootOverlay: true);
+    final overlayBox = overlay.context.findRenderObject() as RenderBox?;
+    if (overlayBox == null || !overlayBox.hasSize) {
+      _scheduleTutorialCheck();
+      return;
+    }
+
+    // The root overlay and the app content can have different origins on Android
+    // because of system insets. Convert the button rect into overlay coordinates.
+    final targetGlobalOffset = renderBox.localToGlobal(Offset.zero);
+    final targetOffset = overlayBox.globalToLocal(targetGlobalOffset);
     final targetRect = targetOffset & renderBox.size;
+
+    // Returning from Settings animates the shell back into place. Wait until
+    // the target has the same bounds in two consecutive frames before drawing
+    // the overlay, otherwise Android can capture an intermediate AppBar rect.
+    if (_lastTutorialTargetRect == null ||
+        !_sameTarget(_lastTutorialTargetRect!, targetRect)) {
+      _lastTutorialTargetRect = targetRect;
+      _scheduleTutorialCheck();
+      return;
+    }
 
     _tutorialOverlayEntry = OverlayEntry(
       builder: (ctx) => ViewModeTutorialOverlay(
@@ -143,7 +175,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
       ),
     );
 
-    Overlay.of(context, rootOverlay: true).insert(_tutorialOverlayEntry!);
+    overlay.insert(_tutorialOverlayEntry!);
   }
 
   @override
@@ -237,12 +269,12 @@ class _SurahListScreenState extends State<SurahListScreen> {
             floating: true,
             snap: true,
             leading: Padding(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(6),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(9),
+                borderRadius: BorderRadius.circular(8),
                 child: Image.asset(
                   isDark ? 'assets/sukun_logo_dark.png' : 'assets/sukun_logo.png',
-                  fit: BoxFit.cover,
+                  fit: BoxFit.contain,
                 ),
               ),
             ),
@@ -280,11 +312,6 @@ class _SurahListScreenState extends State<SurahListScreen> {
                     ? context.tr('tooltip_list_view')
                     : context.tr('tooltip_mosaic_view'),
                 onPressed: viewMode.toggle,
-              ),
-              IconButton(
-                icon: const Icon(Icons.volunteer_activism_outlined, size: 22),
-                tooltip: context.tr('contribute'),
-                onPressed: () => context.push('/settings'),
               ),
               // --- Settings button ---
               IconButton(
