@@ -36,4 +36,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/sukun_logo.png
-    - assets/sukun_logo_dark.png
+    - assets/data/favicon.png

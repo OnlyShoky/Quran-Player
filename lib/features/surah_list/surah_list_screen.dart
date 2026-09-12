@@ -271,10 +271,10 @@ class _SurahListScreenState extends State<SurahListScreen> {
             leading: Padding(
               padding: const EdgeInsets.all(6),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
                 child: Image.asset(
-                  isDark ? 'assets/sukun_logo_dark.png' : 'assets/sukun_logo.png',
-                  fit: BoxFit.contain,
+                  'assets/data/favicon.png',
+                  fit: BoxFit.cover,
                 ),
               ),
             ),
