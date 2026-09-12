@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:just_audio_background/just_audio_background.dart';
+import 'core/services/media_artwork_service.dart';
 import 'app.dart';
 import 'core/analytics/analytics_service.dart';
+import 'core/services/quran_audio_handler.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await JustAudioBackground.init(
+  await MediaArtworkService.prepare();
+  await QuranAudioHandler.initialize(
     androidNotificationChannelId: 'com.example.quran_player.audio',
     androidNotificationChannelName: 'Quran audio playback',
-    androidNotificationOngoing: true,
+    androidNotificationIcon: 'drawable/ic_notification',
   );
   runApp(QuranPlayerApp());
 

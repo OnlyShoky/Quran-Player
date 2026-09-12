@@ -1,18 +1,20 @@
 import 'dart:async';
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:just_audio_background/just_audio_background.dart';
 import 'package:audio_session/audio_session.dart';
 import '../../core/models/surah.dart';
 import '../../core/models/reciter.dart';
 import '../../core/models/audio_api_source.dart';
+import '../../core/services/media_artwork_service.dart';
+import '../../core/services/quran_audio_handler.dart';
 import 'playlist_provider.dart';
 import 'settings_provider.dart';
 
 enum PlaybackState { stopped, playing, paused, buffering }
 
 class PlayerProvider extends ChangeNotifier {
-  final AudioPlayer _audioPlayer = AudioPlayer();
+  final AudioPlayer _audioPlayer = QuranAudioHandler.instance.player;
 
   PlaybackState _state = PlaybackState.stopped;
   int _currentIndex = 0;
@@ -225,6 +227,7 @@ class PlayerProvider extends ChangeNotifier {
         album: 'The Quran',
         title: surah.nameEn,
         artist: reciter.name,
+        artUri: MediaArtworkService.uri,
       ),
     );
   }
@@ -246,9 +249,13 @@ class PlayerProvider extends ChangeNotifier {
       final surah = playlist.surahById(playlist.items[i].surahId);
       if (surah == null) continue;
 
-      final url = i == _currentIndex
+        final candidates = reciter.getAllCandidateAudioSources(surah.id);
+        final url = i == _currentIndex
           ? currentUrl
-          : reciter.getAllCandidateAudioSources(surah.id).first.url;
+          : candidates.isNotEmpty
+            ? candidates.first.url
+            : reciter.getAudioUrl(surah.id);
+        if (url.isEmpty) continue;
       sources.add(_audioSourceFor(url: url, surah: surah, reciter: reciter));
     }
 
@@ -359,7 +366,9 @@ class PlayerProvider extends ChangeNotifier {
             currentSurah: surah,
             reciter: reciter,
           ),
-          initialIndex: _currentIndex,
+            initialIndex: _audioPlayer.sequence.length > _currentIndex
+              ? _currentIndex
+              : 0,
           preload: true,
         );
         await _audioPlayer.play();
