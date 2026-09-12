@@ -268,16 +268,17 @@ class _SurahListScreenState extends State<SurahListScreen> {
           SliverAppBar(
             floating: true,
             snap: true,
+            leadingWidth: 52,
+            titleSpacing: 4,
             leading: Padding(
-              padding: const EdgeInsets.all(6),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.asset(
-                  isDark
-                      ? 'assets/sukun_logo_app_white.png'
-                      : 'assets/sukun_logo_app_black.png',
-                  fit: BoxFit.contain,
-                ),
+              padding: const EdgeInsets.only(left: 16),
+              child: Image.asset(
+                isDark
+                    ? 'assets/sukun_logo_app_white.png'
+                    : 'assets/sukun_logo_app_black.png',
+                fit: BoxFit.contain,
+                width: 36,
+                height: 36,
               ),
             ),
             title: Column(
