@@ -273,8 +273,10 @@ class _SurahListScreenState extends State<SurahListScreen> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: Image.asset(
-                  'assets/data/favicon.png',
-                  fit: BoxFit.cover,
+                  isDark
+                      ? 'assets/sukun_logo_app_white.png'
+                      : 'assets/sukun_logo_app_black.png',
+                  fit: BoxFit.contain,
                 ),
               ),
             ),
