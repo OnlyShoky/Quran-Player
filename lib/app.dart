@@ -114,36 +114,44 @@ class _AppShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final currentIndex = _tabIndex(location);
 
-    return Scaffold(
-      body: child,
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const MiniPlayer(),
-          NavigationBar(
-            selectedIndex: currentIndex,
-            onDestinationSelected: (i) {
-              switch (i) {
-                case 0:
-                  context.go('/surahs');
-                case 1:
-                  context.go('/playlist');
-              }
-            },
-            destinations: [
-              NavigationDestination(
-                icon: const Icon(Icons.menu_book_outlined),
-                selectedIcon: const Icon(Icons.menu_book_rounded),
-                label: context.tr('nav_surahs'),
-              ),
-              NavigationDestination(
-                icon: const Icon(Icons.queue_music_outlined),
-                selectedIcon: const Icon(Icons.queue_music_rounded),
-                label: context.tr('nav_playlist'),
-              ),
-            ],
-          ),
-        ],
+    return PopScope(
+      canPop: currentIndex == 0,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && currentIndex == 1) {
+          context.go('/surahs');
+        }
+      },
+      child: Scaffold(
+        body: child,
+        bottomNavigationBar: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const MiniPlayer(),
+            NavigationBar(
+              selectedIndex: currentIndex,
+              onDestinationSelected: (i) {
+                switch (i) {
+                  case 0:
+                    context.go('/surahs');
+                  case 1:
+                    context.go('/playlist');
+                }
+              },
+              destinations: [
+                NavigationDestination(
+                  icon: const Icon(Icons.menu_book_outlined),
+                  selectedIcon: const Icon(Icons.menu_book_rounded),
+                  label: context.tr('nav_surahs'),
+                ),
+                NavigationDestination(
+                  icon: const Icon(Icons.queue_music_outlined),
+                  selectedIcon: const Icon(Icons.queue_music_rounded),
+                  label: context.tr('nav_playlist'),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

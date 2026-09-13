@@ -6,6 +6,7 @@ import 'package:audio_session/audio_session.dart';
 import '../../core/models/surah.dart';
 import '../../core/models/reciter.dart';
 import '../../core/models/audio_api_source.dart';
+import '../../core/services/audio_output_device_listener.dart';
 import '../../core/services/media_artwork_service.dart';
 import '../../core/services/quran_audio_handler.dart';
 import 'playlist_provider.dart';
@@ -25,6 +26,7 @@ class PlayerProvider extends ChangeNotifier {
   Surah? _currentSurah;
   Reciter? _currentReciter;
   String? _currentAudioUrl;
+  String? _pendingAudioUrl;
   AudioApiSource? _currentAudioSource;
   String? _errorMessage;
 
@@ -33,6 +35,7 @@ class PlayerProvider extends ChangeNotifier {
   StreamSubscription? _durationSub;
   StreamSubscription? _sequenceStateSub;
   StreamSubscription? _becomingNoisySub;
+  late final AudioOutputDeviceListener _audioOutputDeviceListener;
 
   PlaylistProvider? _playlistProvider;
   SettingsProvider? _settingsProvider;
@@ -74,8 +77,20 @@ class PlayerProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   PlayerProvider() {
+    _audioOutputDeviceListener = AudioOutputDeviceListener(_handleAudioOutputDeviceChanged);
     _initAudioSession();
     _initAudioListeners();
+  }
+
+  void _handleAudioOutputDeviceChanged() {
+    if (!_audioPlayer.playing) return;
+
+    final position = _audioPlayer.position;
+    _audioPlayer.setWebSinkId('').then((_) {
+      if (_audioPlayer.playing) return;
+      _audioPlayer.seek(position);
+      _audioPlayer.play();
+    }).catchError((_) {});
   }
 
   Future<void> _initAudioSession() async {
@@ -196,9 +211,21 @@ class PlayerProvider extends ChangeNotifier {
     });
 
     _sequenceStateSub = _audioPlayer.sequenceStateStream.listen((sequenceState) {
-      final index = sequenceState.currentIndex;
       final playlist = _playlistProvider;
-      if (index == null || playlist == null || index >= playlist.items.length) {
+      final currentSource = sequenceState.currentSource;
+      final mediaItem = currentSource?.tag;
+      if (playlist == null || mediaItem is! MediaItem) {
+        return;
+      }
+      if (_pendingAudioUrl != null && mediaItem.id != _pendingAudioUrl) {
+        return;
+      }
+
+      final surahId = mediaItem.extras?['surahId'] as int?;
+      final index = surahId == null
+          ? sequenceState.currentIndex
+          : playlist.items.indexWhere((item) => item.surahId == surahId);
+      if (index == null || index < 0 || index >= playlist.items.length) {
         return;
       }
 
@@ -207,12 +234,17 @@ class PlayerProvider extends ChangeNotifier {
 
       _currentIndex = index;
       _currentSurah = surah;
-      _currentAudioSource = null;
-      _currentAudioUrl = sequenceState.currentSource?.tag is MediaItem
-          ? (sequenceState.currentSource!.tag as MediaItem).id
-          : _currentAudioUrl;
+      _currentAudioUrl = mediaItem.id;
+      _currentAudioSource = _audioSourceFromUrl(mediaItem.id);
       notifyListeners();
     });
+  }
+
+  AudioApiSource? _audioSourceFromUrl(String url) {
+    if (url.contains('mp3quran.net')) return AudioApiSource.mp3Quran;
+    if (url.contains('quranicaudio.com')) return AudioApiSource.quranicAudio;
+    if (url.contains('islamic.network')) return AudioApiSource.alQuranCloud;
+    return null;
   }
 
   AudioSource _audioSourceFor({
@@ -227,6 +259,7 @@ class PlayerProvider extends ChangeNotifier {
         album: 'The Quran',
         title: surah.nameEn,
         artist: reciter.name,
+        extras: {'surahId': surah.id},
         artUri: MediaArtworkService.uri,
       ),
     );
@@ -238,27 +271,31 @@ class PlayerProvider extends ChangeNotifier {
     required Reciter reciter,
   }) {
     final playlist = _playlistProvider;
-    if (playlist == null || playlist.items.length <= 1) {
+    if (playlist == null || playlist.items.isEmpty) {
       return [
-        _audioSourceFor(url: currentUrl, surah: currentSurah, reciter: reciter),
+        _audioSourceFor(
+          url: currentUrl,
+          surah: currentSurah,
+          reciter: reciter,
+        ),
       ];
     }
 
     final sources = <AudioSource>[];
-    for (var i = 0; i < playlist.items.length; i++) {
-      final surah = playlist.surahById(playlist.items[i].surahId);
+    for (final item in playlist.items) {
+      final surah = playlist.surahById(item.surahId);
       if (surah == null) continue;
 
-        final candidates = reciter.getAllCandidateAudioSources(surah.id);
-        final url = i == _currentIndex
+      final candidates = reciter.getAllCandidateAudioSources(surah.id);
+      final url = surah.id == currentSurah.id
           ? currentUrl
           : candidates.isNotEmpty
-            ? candidates.first.url
-            : reciter.getAudioUrl(surah.id);
-        if (url.isEmpty) continue;
-      sources.add(_audioSourceFor(url: url, surah: surah, reciter: reciter));
+              ? candidates.first.url
+              : reciter.getAudioUrl(surah.id);
+      if (url.isNotEmpty) {
+        sources.add(_audioSourceFor(url: url, surah: surah, reciter: reciter));
+      }
     }
-
     return sources;
   }
 
@@ -355,23 +392,35 @@ class PlayerProvider extends ChangeNotifier {
 
     for (var i = 0; i < candidates.length; i++) {
       final candidate = candidates[i];
+      _pendingAudioUrl = candidate.url;
       _currentAudioUrl = candidate.url;
       _currentAudioSource = candidate.apiSource;
       notifyListeners();
 
       try {
+        final sources = _sourcesForCandidate(
+          currentUrl: candidate.url,
+          currentSurah: surah,
+          reciter: reciter,
+        );
+        final initialIndex = sources.indexWhere(
+          (source) => source is UriAudioSource &&
+              source.uri.toString() == candidate.url,
+        );
+        if (initialIndex < 0) {
+          throw StateError('Audio source was not added to the playback queue');
+        }
+
         await _audioPlayer.setAudioSources(
-          _sourcesForCandidate(
-            currentUrl: candidate.url,
-            currentSurah: surah,
-            reciter: reciter,
-          ),
-            initialIndex: _audioPlayer.sequence.length > _currentIndex
-              ? _currentIndex
-              : 0,
+          sources,
+          initialIndex: initialIndex,
           preload: true,
         );
         await _audioPlayer.play();
+        _pendingAudioUrl = null;
+        _currentIndex = index;
+        _currentSurah = surah;
+        _currentAudioUrl = candidate.url;
         _currentAudioSource = candidate.apiSource;
         succeeded = true;
         notifyListeners();
@@ -383,6 +432,7 @@ class PlayerProvider extends ChangeNotifier {
     }
 
     if (!succeeded) {
+      _pendingAudioUrl = null;
       _currentAudioSource = null;
       _errorMessage = 'Failed to load audio: $lastError';
       _state = PlaybackState.stopped;
@@ -420,6 +470,7 @@ class PlayerProvider extends ChangeNotifier {
   void stop() {
     _audioPlayer.stop();
     _audioPlayer.seek(Duration.zero);
+    _pendingAudioUrl = null;
     _state = PlaybackState.stopped;
     _currentSurah = null;
     _currentReciter = null;
@@ -465,6 +516,7 @@ class PlayerProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _audioOutputDeviceListener.dispose();
     _becomingNoisySub?.cancel();
     _playerStateSub?.cancel();
     _positionSub?.cancel();

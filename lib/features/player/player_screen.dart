@@ -84,9 +84,14 @@ class PlayerScreen extends StatelessWidget {
 
     final reciter = player.currentReciter ?? playlist.selectedReciter;
 
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) context.go('/surahs');
+      },
+      child: Scaffold(
+        body: SafeArea(
+          child: Column(
           children: [
             // --- Top bar ---
             Padding(
@@ -99,11 +104,7 @@ class PlayerScreen extends StatelessWidget {
                       size: 32,
                     ),
                     onPressed: () {
-                      if (context.canPop()) {
-                        context.pop();
-                      } else {
-                        context.go('/surahs');
-                      }
+                      context.go('/surahs');
                     },
                     tooltip: 'Back',
                   ),
@@ -122,9 +123,6 @@ class PlayerScreen extends StatelessWidget {
                     color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
                     tooltip: context.tr('nav_playlist'),
                     onPressed: () {
-                      if (context.canPop()) {
-                        context.pop();
-                      }
                       context.go('/playlist');
                     },
                   ),
@@ -387,11 +385,7 @@ class PlayerScreen extends StatelessWidget {
                     tooltip: context.tr('stop'),
                     onTap: () {
                       player.stop();
-                      if (context.canPop()) {
-                        context.pop();
-                      } else {
-                        context.go('/surahs');
-                      }
+                      context.go('/surahs');
                     },
                   ),
                 ],
@@ -445,6 +439,7 @@ class PlayerScreen extends StatelessWidget {
               ),
             ),
           ],
+          ),
         ),
       ),
     );

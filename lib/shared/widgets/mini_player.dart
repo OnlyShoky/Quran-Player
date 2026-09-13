@@ -86,68 +86,89 @@ class MiniPlayer extends StatelessWidget {
                 ],
               ),
             ),
-            // Playback mode (Repeat: One / Next)
-            const PlaybackModeButton(size: 20),
-            // Prev
-            IconButton(
-              padding: const EdgeInsets.all(4),
-              constraints: const BoxConstraints(),
-              onPressed: player.skipPrevious,
-              icon: const Icon(Icons.skip_previous_rounded, size: 20),
-              tooltip: context.tr('previous'),
-              color: theme.colorScheme.onSurface,
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const PlaybackModeButton(size: 18),
+                _MiniPlayerIconButton(
+                  icon: const Icon(Icons.skip_previous_rounded, size: 20),
+                  tooltip: context.tr('previous'),
+                  onPressed: player.skipPrevious,
+                ),
+                _MiniPlayerIconButton(
+                  icon: player.isBuffering
+                      ? SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: theme.colorScheme.primary,
+                          ),
+                        )
+                      : Icon(
+                          player.isPlaying
+                              ? Icons.pause_rounded
+                              : Icons.play_arrow_rounded,
+                          size: 20,
+                        ),
+                  tooltip: player.isPlaying
+                      ? context.tr('pause')
+                      : context.tr('play'),
+                  onPressed: player.togglePlayPause,
+                  color: theme.colorScheme.primary,
+                ),
+                _MiniPlayerIconButton(
+                  icon: const Icon(Icons.skip_next_rounded, size: 20),
+                  tooltip: context.tr('next'),
+                  onPressed: player.skipNext,
+                ),
+                _MiniPlayerIconButton(
+                  icon: const Icon(Icons.stop_rounded, size: 20),
+                  tooltip: context.tr('stop'),
+                  onPressed: player.stop,
+                  color: (player.isPlaying ||
+                          player.state == PlaybackState.paused ||
+                          player.isBuffering)
+                      ? (isDark ? AppColors.mutedDark : AppColors.mutedLight)
+                      : (isDark
+                          ? AppColors.outlineDark
+                          : AppColors.outlineLight),
+                ),
+                const SizedBox(width: 2),
+              ],
             ),
-            const SizedBox(width: 2),
-            // Play/Pause/Buffering
-            IconButton(
-              padding: const EdgeInsets.all(4),
-              constraints: const BoxConstraints(),
-              onPressed: player.togglePlayPause,
-              icon: player.isBuffering
-                  ? SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: theme.colorScheme.primary,
-                      ),
-                    )
-                  : Icon(
-                      player.isPlaying
-                          ? Icons.pause_rounded
-                          : Icons.play_arrow_rounded,
-                      size: 28,
-                    ),
-              tooltip: player.isPlaying ? context.tr('pause') : context.tr('play'),
-              color: theme.colorScheme.primary,
-            ),
-            const SizedBox(width: 2),
-            // Next
-            IconButton(
-              padding: const EdgeInsets.all(4),
-              constraints: const BoxConstraints(),
-              onPressed: player.skipNext,
-              icon: const Icon(Icons.skip_next_rounded, size: 20),
-              tooltip: context.tr('next'),
-              color: theme.colorScheme.onSurface,
-            ),
-            const SizedBox(width: 2),
-            // Dedicated Stop
-            IconButton(
-              padding: const EdgeInsets.all(4),
-              constraints: const BoxConstraints(),
-              onPressed: player.stop,
-              icon: const Icon(Icons.stop_rounded, size: 22),
-              tooltip: context.tr('stop'),
-              color: (player.isPlaying ||
-                      player.state == PlaybackState.paused ||
-                      player.isBuffering)
-                  ? (isDark ? AppColors.mutedDark : AppColors.mutedLight)
-                  : (isDark ? AppColors.outlineDark : AppColors.outlineLight),
-            ),
-            const SizedBox(width: 6),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _MiniPlayerIconButton extends StatelessWidget {
+  final Widget icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+  final Color? color;
+
+  const _MiniPlayerIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 30,
+      height: 40,
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(),
+        onPressed: onPressed,
+        icon: icon,
+        tooltip: tooltip,
+        color: color ?? Theme.of(context).colorScheme.onSurface,
       ),
     );
   }
