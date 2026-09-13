@@ -9,6 +9,7 @@ class QuranAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler 
   static QuranAudioHandler get instance => _instance ??= QuranAudioHandler();
 
   final AudioPlayer player = AudioPlayer();
+  void Function(MediaItem item)? onCurrentMediaItemChanged;
   late final StreamSubscription<SequenceState?> _sequenceSubscription;
   late final StreamSubscription<PlayerState> _playerSubscription;
   late final StreamSubscription<Duration> _positionSubscription;
@@ -50,9 +51,11 @@ class QuranAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler 
     final currentSource = sequenceState.currentSource;
     final currentMediaItem = currentSource?.tag;
     if (currentMediaItem is MediaItem) {
-      mediaItem.add(currentMediaItem.copyWith(
+      final updatedMediaItem = currentMediaItem.copyWith(
         duration: player.duration,
-      ));
+      );
+      mediaItem.add(updatedMediaItem);
+      onCurrentMediaItemChanged?.call(updatedMediaItem);
     }
     _broadcastPlaybackState();
   }
@@ -101,10 +104,34 @@ class QuranAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler 
   Future<void> seek(Duration position) => player.seek(position);
 
   @override
-  Future<void> skipToNext() => player.seekToNext();
+  Future<void> skipToNext() async {
+    final nextIndex = (player.currentIndex ?? -1) + 1;
+    await player.seekToNext();
+    await _publishMediaItemAtIndex(nextIndex);
+  }
 
   @override
-  Future<void> skipToPrevious() => player.seekToPrevious();
+  Future<void> skipToPrevious() async {
+    final previousIndex = (player.currentIndex ?? 0) - 1;
+    await player.seekToPrevious();
+    await _publishMediaItemAtIndex(previousIndex);
+  }
+
+  Future<void> _publishMediaItemAtIndex(int index) async {
+    if (index < 0 || index >= player.sequence.length) return;
+
+    final sequenceState = await player.sequenceStateStream.firstWhere(
+      (state) => state.currentIndex == index,
+    );
+    final currentMediaItem = sequenceState.currentSource?.tag;
+    if (currentMediaItem is MediaItem) {
+      final updatedMediaItem = currentMediaItem.copyWith(
+        duration: player.duration,
+      );
+      mediaItem.add(updatedMediaItem);
+      onCurrentMediaItemChanged?.call(updatedMediaItem);
+    }
+  }
 
   @override
   Future<void> stop() async {

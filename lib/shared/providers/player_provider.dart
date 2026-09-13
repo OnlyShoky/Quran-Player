@@ -34,6 +34,8 @@ class PlayerProvider extends ChangeNotifier {
   StreamSubscription? _positionSub;
   StreamSubscription? _durationSub;
   StreamSubscription? _sequenceStateSub;
+  StreamSubscription? _currentIndexSub;
+  StreamSubscription? _mediaItemSub;
   StreamSubscription? _becomingNoisySub;
   late final AudioOutputDeviceListener _audioOutputDeviceListener;
 
@@ -77,9 +79,30 @@ class PlayerProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   PlayerProvider() {
+    final audioHandler = QuranAudioHandler.instance;
+    audioHandler.onCurrentMediaItemChanged = _syncCurrentMediaItem;
     _audioOutputDeviceListener = AudioOutputDeviceListener(_handleAudioOutputDeviceChanged);
     _initAudioSession();
     _initAudioListeners();
+  }
+
+  void _syncCurrentMediaItem(MediaItem mediaItem) {
+    final playlist = _playlistProvider;
+    if (playlist == null) return;
+    if (_pendingAudioUrl != null && mediaItem.id != _pendingAudioUrl) return;
+
+    final surahId = mediaItem.extras?['surahId'] as int?;
+    if (surahId == null) return;
+    final index = playlist.items.indexWhere((item) => item.surahId == surahId);
+    if (index < 0) return;
+    final surah = playlist.surahById(surahId);
+    if (surah == null) return;
+
+    _currentIndex = index;
+    _currentSurah = surah;
+    _currentAudioUrl = mediaItem.id;
+    _currentAudioSource = _audioSourceFromUrl(mediaItem.id);
+    notifyListeners();
   }
 
   void _handleAudioOutputDeviceChanged() {
@@ -210,20 +233,15 @@ class PlayerProvider extends ChangeNotifier {
       }
     });
 
-    _sequenceStateSub = _audioPlayer.sequenceStateStream.listen((sequenceState) {
+    void syncMediaItem(MediaItem? mediaItem, [int? sequenceIndex]) {
       final playlist = _playlistProvider;
-      final currentSource = sequenceState.currentSource;
-      final mediaItem = currentSource?.tag;
       if (playlist == null || mediaItem is! MediaItem) {
-        return;
-      }
-      if (_pendingAudioUrl != null && mediaItem.id != _pendingAudioUrl) {
         return;
       }
 
       final surahId = mediaItem.extras?['surahId'] as int?;
       final index = surahId == null
-          ? sequenceState.currentIndex
+          ? sequenceIndex
           : playlist.items.indexWhere((item) => item.surahId == surahId);
       if (index == null || index < 0 || index >= playlist.items.length) {
         return;
@@ -237,7 +255,26 @@ class PlayerProvider extends ChangeNotifier {
       _currentAudioUrl = mediaItem.id;
       _currentAudioSource = _audioSourceFromUrl(mediaItem.id);
       notifyListeners();
+    }
+
+    _sequenceStateSub = _audioPlayer.sequenceStateStream.listen((sequenceState) {
+      final source = sequenceState.currentSource;
+      syncMediaItem(
+        source?.tag as MediaItem?,
+        sequenceState.currentIndex,
+      );
     });
+    _currentIndexSub = _audioPlayer.currentIndexStream.listen((index) {
+      if (index == null || index < 0 || index >= _audioPlayer.sequence.length) {
+        return;
+      }
+      final source = _audioPlayer.sequence[index];
+      syncMediaItem(
+        source.tag as MediaItem?,
+        index,
+      );
+    });
+    _mediaItemSub = QuranAudioHandler.instance.mediaItem.listen(syncMediaItem);
   }
 
   AudioApiSource? _audioSourceFromUrl(String url) {
@@ -379,6 +416,10 @@ class PlayerProvider extends ChangeNotifier {
       }
     }
 
+    // Mark the requested track before stopping the current one so stale
+    // sequence events cannot move the UI back to the previous surah.
+    _pendingAudioUrl = candidates.isNotEmpty ? candidates.first.url : null;
+
     _state = PlaybackState.buffering;
     notifyListeners();
 
@@ -516,12 +557,15 @@ class PlayerProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    QuranAudioHandler.instance.onCurrentMediaItemChanged = null;
     _audioOutputDeviceListener.dispose();
     _becomingNoisySub?.cancel();
     _playerStateSub?.cancel();
     _positionSub?.cancel();
     _durationSub?.cancel();
     _sequenceStateSub?.cancel();
+    _currentIndexSub?.cancel();
+    _mediaItemSub?.cancel();
     _audioPlayer.dispose();
     super.dispose();
   }
