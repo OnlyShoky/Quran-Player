@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import '../../core/constants/donation_links.dart';
 import '../../core/localization/app_localizations.dart';
 
@@ -55,7 +56,7 @@ class DonationActions extends StatelessWidget {
     }
 
     return Wrap(
-      alignment: WrapAlignment.center,
+      alignment: WrapAlignment.start,
       spacing: 12,
       runSpacing: 10,
       children: [
