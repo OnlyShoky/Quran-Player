@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +9,7 @@ import '../../shared/providers/settings_provider.dart';
 import '../../shared/providers/view_mode_provider.dart';
 import '../../shared/utils/app_snackbar.dart';
 import '../../shared/widgets/donation_actions.dart';
+import '../../shared/widgets/device_preview_switcher.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -330,7 +332,7 @@ class SettingsScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Al-Quran Player',
+                              'sukun',
                               style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -358,6 +360,39 @@ class SettingsScreen extends StatelessWidget {
               ),
             ],
           ),
+
+          if (kDebugMode) ...[
+            const SizedBox(height: 24),
+            const _SectionHeader(
+              title: 'Developer / Preview',
+              icon: Icons.developer_mode_rounded,
+            ),
+            const SizedBox(height: 8),
+            _SettingsCard(
+              children: [
+                ListTile(
+                  leading: Icon(
+                    Icons.devices_other_rounded,
+                    color: isDark ? AppColors.primaryDark : AppColors.primaryLight,
+                  ),
+                  title: Text(
+                    'Device Preview',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Preview app on iPhone, iPad & Android devices',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
+                    ),
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => showDevicePreviewSheet(context),
+                ),
+              ],
+            ),
+          ],
 
           const SizedBox(height: 40),
         ],

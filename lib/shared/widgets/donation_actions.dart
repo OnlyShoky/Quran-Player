@@ -36,36 +36,40 @@ class DonationActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final paypal = OutlinedButton.icon(
-      onPressed: () => _open(context, DonationLinks.paypal),
-      icon: const FaIcon(FontAwesomeIcons.paypal, size: 16),
-      label: Text(context.tr('support_paypal')),
-    );
-    final coffee = OutlinedButton.icon(
-      onPressed: () => _open(context, DonationLinks.buyMeACoffee),
-      icon: const FaIcon(FontAwesomeIcons.mugHot, size: 16),
-      label: Text(context.tr('buy_me_a_coffee')),
-    );
+    if (compact) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            onPressed: () => _open(context, DonationLinks.paypal),
+            icon: const FaIcon(FontAwesomeIcons.paypal, size: 17),
+            tooltip: context.tr('support_paypal'),
+          ),
+          IconButton(
+            onPressed: () => _open(context, DonationLinks.buyMeACoffee),
+            icon: const FaIcon(FontAwesomeIcons.mugHot, size: 17),
+            tooltip: context.tr('buy_me_a_coffee'),
+          ),
+        ],
+      );
+    }
 
-    return compact
-        ? Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                onPressed: () => _open(context, DonationLinks.paypal),
-                icon: const FaIcon(FontAwesomeIcons.paypal, size: 17),
-                tooltip: context.tr('support_paypal'),
-              ),
-              IconButton(
-                onPressed: () => _open(context, DonationLinks.buyMeACoffee),
-                icon: const FaIcon(FontAwesomeIcons.mugHot, size: 17),
-                tooltip: context.tr('buy_me_a_coffee'),
-              ),
-            ],
-          )
-        : Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [paypal, const SizedBox(height: 10), coffee],
-          );
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 12,
+      runSpacing: 10,
+      children: [
+        OutlinedButton.icon(
+          onPressed: () => _open(context, DonationLinks.paypal),
+          icon: const FaIcon(FontAwesomeIcons.paypal, size: 15),
+          label: Text(context.tr('support_paypal')),
+        ),
+        OutlinedButton.icon(
+          onPressed: () => _open(context, DonationLinks.buyMeACoffee),
+          icon: const FaIcon(FontAwesomeIcons.mugHot, size: 15),
+          label: Text(context.tr('buy_me_a_coffee')),
+        ),
+      ],
+    );
   }
 }

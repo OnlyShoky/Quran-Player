@@ -13,6 +13,7 @@ import 'features/playlist/playlist_screen.dart';
 import 'features/player/player_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'shared/widgets/mini_player.dart';
+import 'shared/widgets/device_preview_switcher.dart';
 import 'core/analytics/analytics_service.dart';
 
 class QuranPlayerApp extends StatelessWidget {
@@ -92,6 +93,11 @@ class QuranPlayerApp extends StatelessWidget {
             ],
             routerConfig: _router,
             debugShowCheckedModeBanner: false,
+            builder: (context, child) {
+              return DevicePreviewQuickSwitcher(
+                child: child ?? const SizedBox.shrink(),
+              );
+            },
           );
         },
       ),

@@ -23,7 +23,7 @@ class AppLocalizations {
 
   static final Map<String, Map<String, String>> _localizedValues = {
     'en': {
-      'app_title': 'Quran Player',
+      'app_title': 'sukun',
       'nav_surahs': 'Surahs',
       'nav_playlist': 'Playlist',
       'settings_title': 'Settings',
@@ -125,7 +125,7 @@ class AppLocalizations {
       'show_api_source_in_player_desc': 'Display the streaming provider badge on the player screen',
     },
     'es': {
-      'app_title': 'Quran Player',
+      'app_title': 'sukun',
       'nav_surahs': 'Surahs',
       'nav_playlist': 'Lista',
       'settings_title': 'Configuración',
@@ -228,7 +228,7 @@ class AppLocalizations {
       'show_api_source_in_player_desc': 'Muestra la insignia del proveedor en la pantalla del reproductor',
     },
     'fr': {
-      'app_title': 'Quran Player',
+      'app_title': 'sukun',
       'nav_surahs': 'Sourates',
       'nav_playlist': 'Liste',
       'settings_title': 'Paramètres',
@@ -331,7 +331,7 @@ class AppLocalizations {
       'show_api_source_in_player_desc': 'Affiche le badge du fournisseur audio sur l\'écran du lecteur',
     },
     'ar': {
-      'app_title': 'قارئ القرآن',
+      'app_title': 'sukun',
       'nav_surahs': 'السور',
       'nav_playlist': 'القائمة',
       'settings_title': 'الإعدادات',

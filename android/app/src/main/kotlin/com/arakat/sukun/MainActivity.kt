@@ -1,4 +1,4 @@
-package com.example.quran_player
+package com.arakat.sukun
 
 import com.ryanheise.audioservice.AudioServiceActivity
 

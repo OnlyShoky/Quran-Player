@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -17,39 +17,89 @@
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="sukun is a minimalist Quran audio player. Qur'an, without distractions.">
-  <meta name="keywords" content="sukun, sukun quran, Quran player, Quran audio, listen Quran">
-  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#101614">
-  <link rel="canonical" href="https://sukunquran.netlify.app/">
 
+  <!-- Primary SEO -->
+  <title>sukun | Qur'an, without distractions.</title>
+  <meta name="description" content="sukun is a free, minimalist Quran audio player. Listen to the Holy Qur'an with your favourite reciter — in English, Spanish, French and Arabic. No ads, no account.">
+  <meta name="keywords" content="sukun, Quran player, Quran audio, listen Quran, Holy Quran, مشغل القرآن, استماع للقرآن, reproductor de Quran, lecteur Coran, Quran online free, Quran reciter, sukun quran, Quran mp3, recitación Corán, récitation Coran">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <meta name="author" content="sukun">
+  <link rel="canonical" href="https://sukun.arakat.app/">
+
+  <!-- Open Graph / Social Media -->
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="sukun">
   <meta property="og:title" content="sukun | Qur'an, without distractions.">
-  <meta property="og:description" content="A calm, focused way to listen to the Qur'an.">
-  <meta property="og:url" content="https://sukunquran.netlify.app/">
-  <meta property="og:image" content="https://sukunquran.netlify.app/icons/icon-512.png">
+  <meta property="og:description" content="A free, calm and focused way to listen to the Qur'an. No ads, no account. Available on Web and Android.">
+  <meta property="og:url" content="https://sukun.arakat.app/">
+  <meta property="og:image" content="https://sukun.arakat.app/icons/icon-512.png">
+  <meta property="og:image:width" content="512">
+  <meta property="og:image:height" content="512">
+  <meta property="og:image:alt" content="sukun app icon — minimalist Quran audio player">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:locale:alternate" content="ar_AR">
+  <meta property="og:locale:alternate" content="es_ES">
+  <meta property="og:locale:alternate" content="fr_FR">
+
+  <!-- Twitter / X Cards -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="sukun | Qur'an, without distractions.">
-  <meta name="twitter:description" content="A calm, focused way to listen to the Qur'an.">
-  <meta name="twitter:image" content="https://sukunquran.netlify.app/icons/icon-512.png">
+  <meta name="twitter:description" content="A free, calm and focused way to listen to the Qur'an. No ads, no account. Available on Web and Android.">
+  <meta name="twitter:image" content="https://sukun.arakat.app/icons/icon-512.png">
+  <meta name="twitter:image:alt" content="sukun app icon">
 
+  <!-- JSON-LD Structured Data (for Google & AI crawlers like ChatGPT) -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "MobileApplication",
-    "name": "sukun",
-    "alternateName": "sukun Quran",
-    "description": "A minimalist Quran audio player. Qur'an, without distractions.",
-    "applicationCategory": "MultimediaApplication",
-    "operatingSystem": "Web, Android, iOS",
-    "url": "https://sukunquran.netlify.app/",
-    "image": "https://sukunquran.netlify.app/icons/icon-512.png"
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        "@id": "https://sukun.arakat.app/#webapp",
+        "name": "sukun",
+        "alternateName": ["sukun Quran", "sukun quran player"],
+        "description": "A free, minimalist Quran audio player available on Web and Android. Listen to the Holy Qur'an with world-renowned reciters in English, Spanish, French and Arabic. No ads, no account required.",
+        "applicationCategory": "MultimediaApplication",
+        "applicationSubCategory": "Religious",
+        "operatingSystem": "Web, Android",
+        "url": "https://sukun.arakat.app/",
+        "image": "https://sukun.arakat.app/icons/icon-512.png",
+        "screenshot": "https://sukun.arakat.app/icons/icon-512.png",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "inLanguage": ["en", "es", "fr", "ar"],
+        "featureList": [
+          "Listen to all 114 Surahs of the Quran",
+          "Multiple renowned reciters",
+          "Dark and light theme",
+          "Offline-capable Progressive Web App",
+          "Playlist support",
+          "No ads, no account required"
+        ],
+        "publisher": {
+          "@type": "Organization",
+          "name": "sukun",
+          "url": "https://sukun.arakat.app/"
+        }
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://sukun.arakat.app/#website",
+        "url": "https://sukun.arakat.app/",
+        "name": "sukun",
+        "description": "Qur'an, without distractions.",
+        "inLanguage": ["en", "es", "fr", "ar"]
+      }
+    ]
   }
   </script>
 
-  <!-- Google tag (gtag.js) -->
+  <!-- Google Analytics (GA4) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZSJYBTZYK3"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
@@ -58,8 +108,9 @@
     gtag('config', 'G-ZSJYBTZYK3', { send_page_view: true });
   </script>
 
-  <!-- iOS meta tags & icons -->
+  <!-- iOS / Apple PWA -->
   <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="sukun">
   <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
@@ -71,7 +122,7 @@
   <link rel="icon" type="image/png" href="favicon.png" media="(prefers-color-scheme: light)">
   <link rel="icon" type="image/png" href="favicon-dark.png" media="(prefers-color-scheme: dark)">
 
-  <title>sukun | Qur'an, without distractions.</title>
+  <!-- PWA Manifest -->
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
