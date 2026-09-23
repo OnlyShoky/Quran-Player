@@ -143,21 +143,22 @@ class ApiService {
   /// 2. QuranicAudio.com
   Future<List<Reciter>> _fetchQuranicAudioReciters() async {
     List? list;
-    try {
-      final response = await _client.get(
-        Uri.parse('$_quranicAudioBaseUrl/qaris'),
-      );
+    if (!kIsWeb) {
+      try {
+        final response = await _client.get(
+          Uri.parse('$_quranicAudioBaseUrl/qaris'),
+        );
 
-      if (response.statusCode == 200) {
-        list = json.decode(response.body) as List?;
-      } else {
-        debugPrint('QuranicAudio returned ${response.statusCode}, using bundled data');
+        if (response.statusCode == 200) {
+          list = json.decode(response.body) as List?;
+        }
+      } catch (e) {
+        debugPrint('QuranicAudio live fetch unavailable: $e — using bundled data');
       }
-    } catch (e) {
-      debugPrint('QuranicAudio fetch error: $e — using bundled data');
     }
 
-    // Fall back to bundled data if live API is unavailable
+    // On Web (browser CORS restricts direct API fetch) or when offline on mobile,
+    // use the curated bundled dataset.
     final source = list ?? kQuranicAudioQaris;
     final reciters = <Reciter>[];
 

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:device_preview/device_preview.dart';
+
 import 'core/services/media_artwork_service.dart';
 import 'app.dart';
 import 'core/analytics/analytics_service.dart';
@@ -10,6 +11,7 @@ Future<void> main() async {
   if (kDebugMode) {
     DevicePreview.enable(
       padding: const EdgeInsets.all(24),
+      backgroundDecoration: const BoxDecoration(color: Colors.transparent),
     );
   }
   await MediaArtworkService.prepare();

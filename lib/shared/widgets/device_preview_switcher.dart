@@ -1,7 +1,10 @@
+import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:device_preview/device_preview.dart';
 import 'package:device_preview/presets.dart';
+import '../utils/web_downloader.dart';
 
 /// Opens the Device Preview selection modal sheet.
 void showDevicePreviewSheet(BuildContext context) {
@@ -32,6 +35,60 @@ class _DevicePreviewQuickSwitcherState extends State<DevicePreviewQuickSwitcher>
   Offset _position = const Offset(16, 120);
   bool _isCollapsed = false;
   bool _isHidden = false;
+  bool _isCapturing = false;
+  final GlobalKey _screenshotKey = GlobalKey();
+
+  Future<void> _takeScreenshot() async {
+    if (_isCapturing) return;
+    setState(() => _isCapturing = true);
+    await WidgetsBinding.instance.endOfFrame;
+
+    try {
+      Uint8List? pngBytes;
+
+      final boundary = _screenshotKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary != null) {
+        final image = await boundary.toImage(pixelRatio: 2.0);
+        final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+        image.dispose();
+        pngBytes = byteData?.buffer.asUint8List();
+      }
+
+      if (pngBytes != null && mounted) {
+        final controller = DevicePreview.maybeController;
+        final presetName = controller != null
+            ? _getPresetName(controller, controller.simulation)
+            : null;
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final safeName = (presetName ?? 'screen').replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+        final fileName = 'sukun_${safeName}_$timestamp.png';
+
+        downloadBytes(pngBytes, fileName);
+
+        if (mounted) {
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle_rounded, color: Colors.greenAccent, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text('Screenshot downloaded: $fileName')),
+                ],
+              ),
+              duration: const Duration(seconds: 3),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Screenshot failed: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isCapturing = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,8 +103,11 @@ class _DevicePreviewQuickSwitcherState extends State<DevicePreviewQuickSwitcher>
 
     return Stack(
       children: [
-        widget.child,
-        if (!_isHidden)
+        RepaintBoundary(
+          key: _screenshotKey,
+          child: widget.child,
+        ),
+        if (!_isHidden && !_isCapturing)
           Positioned(
             left: _position.dx,
             top: _position.dy,
@@ -150,6 +210,19 @@ class _DevicePreviewQuickSwitcherState extends State<DevicePreviewQuickSwitcher>
                             ),
                           ),
                           if (!_isCollapsed) ...[
+                            const SizedBox(width: 4),
+                            InkWell(
+                              onTap: _takeScreenshot,
+                              borderRadius: BorderRadius.circular(12),
+                              child: const Padding(
+                                padding: EdgeInsets.all(2.0),
+                                child: Icon(
+                                  Icons.camera_alt_outlined,
+                                  size: 16,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ),
                             const SizedBox(width: 2),
                             InkWell(
                               onTap: () {
