@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy - sukun</title>
+  <meta name="description"
+    content="Privacy Policy for sukun, the minimalist Quran audio app for Web and Android. Learn how we respect and protect your privacy.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sukun.arakat.app/privacy-policy.html">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <meta name="theme-color" content="#101614">
+
+  <style>
+    :root {
+      --bg: #101614;
+      --card-bg: #17211e;
+      --card-border: #233530;
+      --accent: #10b981;
+      --accent-soft: rgba(16, 185, 129, 0.12);
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --text-dim: #6b7280;
+      --code-bg: #0b1110;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.65;
+      padding: 24px 16px 64px 16px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 820px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 36px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--text);
+      font-weight: 700;
+      font-size: 1.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-badge {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 10px var(--accent);
+    }
+
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .back-btn:hover {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    h1 {
+      font-size: 2.25rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      color: #ffffff;
+    }
+
+    .meta {
+      color: var(--text-muted);
+      font-size: 0.925rem;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin: 28px 0;
+    }
+
+    .summary-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .summary-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .summary-val {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    section {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin: 18px 0 8px 0;
+    }
+
+    p {
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      font-size: 0.95rem;
+    }
+
+    p:last-child {
+      margin-bottom: 0;
+    }
+
+    ul {
+      margin: 8px 0 16px 20px;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    li {
+      margin-bottom: 6px;
+    }
+
+    li strong {
+      color: var(--text);
+    }
+
+    code {
+      background: var(--code-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.85em;
+      color: var(--accent);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    a:hover {
+      color: #34d399;
+    }
+
+    .badge-pill {
+      display: inline-block;
+      padding: 3px 8px;
+      font-size: 0.75rem;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 600;
+      margin-right: 6px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 32px 0;
+      color: var(--text-dim);
+      font-size: 0.875rem;
+      border-top: 1px solid var(--card-border);
+      margin-top: 32px;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 16px 12px 48px 12px;
+      }
+
+      h1 {
+        font-size: 1.8rem;
+      }
+
+      section {
+        padding: 18px 16px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <div class="header-top">
+        <a href="https://sukun.arakat.app/" class="brand">
+          <span class="brand-badge"></span>
+          sukun
+        </a>
+        <a href="https://sukun.arakat.app/" class="back-btn">
+          &larr; Open sukun App
+        </a>
+      </div>
+      <div>
+        <h1>Privacy Policy</h1>
+        <p class="meta">Effective & Last Updated: September 23, 2026 &bull; Version 1.0.0</p>
+      </div>
+    </header>
+
+    <div class="summary-grid">
+      <div class="summary-card">
+        <span class="summary-title">App Model</span>
+        <span class="summary-val">100% Free & No Ads</span>
+      </div>
+      <div class="summary-card">
+        <span class="summary-title">Account</span>
+        <span class="summary-val">None Required</span>
+      </div>
+      <div class="summary-card">
+        <span class="summary-title">Personal Data</span>
+        <span class="summary-val">Zero Collected or Sold</span>
+      </div>
+      <div class="summary-card">
+        <span class="summary-title">Preferences</span>
+        <span class="summary-val">Saved On-Device Only</span>
+      </div>
+    </div>
+
+    <!-- 1. OVERVIEW -->
+    <section>
+      <h2>1. Introduction & Overview</h2>
+      <p>
+        <strong>sukun</strong> (&ldquo;we&rdquo;, &ldquo;our&rdquo;, or &ldquo;the app&rdquo;) is a calm, minimalist
+        Quran audio application developed by <strong>Arakat</strong>. sukun is available as a web application at <a
+          href="https://sukun.arakat.app/">https://sukun.arakat.app</a> and as a mobile application for Android
+        (Application ID: <code>com.arakat.sukun</code>).
+      </p>
+      <p>
+        We believe that listening to the Holy Qur'an should be peaceful, pure, and completely free from distractions and
+        intrusive data collection. This Privacy Policy describes how sukun handles data, the third-party audio services
+        we use, and your rights when using the application.
+      </p>
+    </section>
+
+    <!-- 2. DATA NOT COLLECTED -->
+    <section>
+      <h2>2. Information We Do NOT Collect</h2>
+      <p>
+        sukun is built with a strict <strong>privacy-by-design</strong> architecture:
+      </p>
+      <ul>
+        <li><strong>No Personal Accounts:</strong> You do not need an account, email address, password, or profile to
+          use the app.</li>
+        <li><strong>No Personally Identifiable Information (PII):</strong> We do not ask for, record, collect, or store
+          your name, email, phone number, address, contacts, or calendar.</li>
+        <li><strong>No Device Sensors or Media Access:</strong> The app does not access your camera, microphone, photo
+          gallery, location, or biometric data.</li>
+        <li><strong>No Advertisements:</strong> sukun contains zero advertisements. We do not integrate ad networks
+          (such as Google AdMob) or advertising identifiers (AAID / IDFA). We will never sell, lease, or monetize your
+          data.</li>
+      </ul>
+    </section>
+
+    <!-- 3. HOW WE HANDLE DATA -->
+    <section>
+      <h2>3. Information We Collect or Process</h2>
+      <p>
+        Depending on the platform you use (Web or Android), limited non-personal technical data is processed as follows:
+      </p>
+
+      <h3>A. Aggregate Analytics (Web Version)</h3>
+      <p>
+        On our website (<code>sukun.arakat.app</code>), we use Google Analytics 4 (GA4) with IP anonymization to monitor
+        aggregate, anonymous visitor trends (such as total daily listeners, popular languages, and device screen size).
+        This data is purely statistical and cannot be used to identify individuals. No advertising, remarketing, or
+        cross-site tracking features are enabled.
+      </p>
+
+      <h3>B. Local Storage & Device Preferences</h3>
+      <p>
+        To preserve your listening setup across sessions, sukun saves your settings locally on your device (using
+        Android <code>SharedPreferences</code> and Web <code>localStorage</code>). This includes:
+      </p>
+      <ul>
+        <li>Your chosen visual theme (Light, Dark, or System)</li>
+        <li>Your selected application language (English, Spanish, French, or Arabic)</li>
+        <li>Your favorite and pinned reciters</li>
+        <li>Your current playback playlist and selected audio streaming API</li>
+        <li>Your UI view preference (mosaic grid or list view)</li>
+      </ul>
+      <p>
+        <strong>This data remains strictly stored on your own device</strong> and is never transmitted to, synced with,
+        or stored on our servers. You can clear this data at any time by clearing your browser cache or resetting app
+        storage in Android settings.
+      </p>
+    </section>
+
+    <!-- 4. THIRD-PARTY APIS & AUDIO STREAMING -->
+    <section>
+      <h2>4. Third-Party Services & Audio APIs</h2>
+      <p>
+        sukun streams audio recitations directly from trusted Islamic audio CDNs and API providers. When you play a
+        Surah, your device establishes a direct HTTP/HTTPS connection with the selected content provider to retrieve the
+        audio file and reciter metadata:
+      </p>
+      <ul>
+        <li>
+          <strong>MP3Quran.net:</strong> Catalog and high-quality audio servers (<a href="https://mp3quran.net"
+            target="_blank" rel="noopener">mp3quran.net</a>).
+        </li>
+        <li>
+          <strong>QuranicAudio.com:</strong> Curated high-fidelity audio collection hosted by Quran Foundation (<a
+            href="https://quranicaudio.com" target="_blank" rel="noopener">quranicaudio.com</a>).
+        </li>
+        <li>
+          <strong>AlQuran Cloud:</strong> Global Islamic audio and metadata CDN operated by Islamic Network (<a
+            href="https://alquran.cloud" target="_blank" rel="noopener">alquran.cloud</a>).
+        </li>
+      </ul>
+      <p>
+        Like any web request on the internet, your device transmits standard network headers (such as your public IP
+        address and device User-Agent) directly to these third-party audio servers so they can deliver the audio stream
+        to your player. These providers operate under their respective privacy terms and industry-standard server
+        logging practices.
+      </p>
+
+      <h3>Voluntary Support / Donations</h3>
+      <p>
+        Users who wish to support the project can choose to make a voluntary contribution via external links to
+        <strong>PayPal</strong> or <strong>Buy Me a Coffee</strong>. All payments are processed entirely on those
+        third-party platforms. sukun does not process, receive, or store any payment or financial details.
+      </p>
+    </section>
+
+    <!-- 5. ANDROID PERMISSIONS -->
+    <section>
+      <h2>5. Android Device Permissions</h2>
+      <p>
+        The Android version of sukun (<code>com.arakat.sukun</code>) requests only the minimal technical permissions
+        required to operate as an audio player:
+      </p>
+      <ul>
+        <li>
+          <code>android.permission.INTERNET</code>: Required to stream Quran recitations from the audio APIs mentioned
+          above.
+        </li>
+        <li>
+          <code>android.permission.FOREGROUND_SERVICE</code> &amp;
+          <code>android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK</code>: Required on Android 14+ so that audio
+          playback continues without interruption when you switch apps or turn off your screen.
+        </li>
+        <li>
+          <code>android.permission.POST_NOTIFICATIONS</code>: Required on Android 13+ to display the system media
+          playback controls (play, pause, previous, next) in your notification shade and lock screen. <em>We never send
+            promotional or spam push notifications.</em>
+        </li>
+        <li>
+          <code>android.permission.WAKE_LOCK</code>: Ensures continuous audio playback without the operating system
+          prematurely cutting off the audio stream while your phone is locked.
+        </li>
+      </ul>
+    </section>
+
+    <!-- 6. CHILDREN'S PRIVACY -->
+    <section>
+      <h2>6. Children's Privacy</h2>
+      <p>
+        sukun is intended for people of all ages, including children and families seeking to listen to and memorize the
+        Holy Qur'an.
+      </p>
+      <p>
+        Because our app collects no personal information, we do not knowingly collect, request, or maintain personally
+        identifiable information from children under the age of 13 (or under 16 in applicable jurisdictions), in
+        compliance with the Children's Online Privacy Protection Act (<strong>COPPA</strong>) and the European Union
+        General Data Protection Regulation (<strong>GDPR</strong>).
+      </p>
+    </section>
+
+    <!-- 7. SECURITY & ENCRYPTION -->
+    <section>
+      <h2>7. Security & Data Protection</h2>
+      <p>
+        All communications between sukun, our web domain, and third-party audio APIs are conducted over
+        industry-standard <strong>HTTPS/TLS encryption</strong> to ensure that your traffic cannot be tampered with or
+        intercepted in transit.
+      </p>
+    </section>
+
+    <!-- 8. USER RIGHTS -->
+    <section>
+      <h2>8. Your Rights (GDPR & CCPA Compliance)</h2>
+      <p>
+        Under regulations such as GDPR and CCPA, users have rights regarding their personal data (access, rectification,
+        erasure). Because sukun holds <strong>no personal data, accounts, or user records on any server</strong>, there
+        is no database record for us to retrieve or delete.
+      </p>
+      <p>
+        You have complete, direct control over your on-device preferences at all times:
+      </p>
+      <ul>
+        <li>On Android: Go to <em>Settings &rarr; Apps &rarr; sukun &rarr; Storage &rarr; Clear Data</em> to wipe all
+          saved preferences.</li>
+        <li>On Web: Clear your browser's local storage and cookies for <code>sukun.arakat.app</code>.</li>
+      </ul>
+    </section>
+
+    <!-- 9. CHANGES -->
+    <section>
+      <h2>9. Changes to This Privacy Policy</h2>
+      <p>
+        We may update this Privacy Policy from time to time to reflect operational, legal, or regulatory requirements.
+        Any revisions will be published immediately on this page with an updated &ldquo;Last Updated&rdquo; date. We
+        encourage you to review this page periodically.
+      </p>
+    </section>
+
+    <!-- 10. CONTACT -->
+    <section>
+      <h2>10. Contact Us</h2>
+      <p>
+        If you have any questions, concerns, or feedback regarding this Privacy Policy or sukun's privacy practices,
+        please contact us:
+      </p>
+      <ul>
+        <li><strong>Developer:</strong> Arakat</li>
+        <li><strong>Website:</strong> <a href="https://sukun.arakat.app/">https://sukun.arakat.app</a></li>
+        <li><strong>Email:</strong> <a href="mailto:arakat.contact@gmail.com">arakat.contact@gmail.com</a></li>
+      </ul>
+    </section>
+
+    <footer>
+      <p>&copy; 2026 sukun by Arakat. All rights reserved.</p>
+      <p style="margin-top: 6px;">
+        <a href="https://sukun.arakat.app/">Web App</a> &bull;
+        <a href="https://sukun.arakat.app/privacy-policy.html">Privacy Policy</a>
+      </p>
+    </footer>
+  </div>
+</body>
+
+</html>

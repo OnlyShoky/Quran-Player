@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../core/models/audio_api_source.dart';
@@ -357,6 +358,24 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: Icon(
+                  Icons.privacy_tip_outlined,
+                  color: isDark ? AppColors.primaryDark : AppColors.primaryLight,
+                ),
+                title: Text(
+                  context.tr('privacy_policy'),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                trailing: const Icon(Icons.open_in_new_rounded, size: 18),
+                onTap: () async {
+                  final uri = Uri.parse('https://sukun.arakat.app/privacy-policy.html');
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                },
               ),
             ],
           ),

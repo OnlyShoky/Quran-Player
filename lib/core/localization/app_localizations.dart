@@ -123,6 +123,7 @@ class AppLocalizations {
       'cannot_disable_all_sources': 'At least one audio source must remain active.',
       'show_api_source_in_player': 'Show active API in player',
       'show_api_source_in_player_desc': 'Display the streaming provider badge on the player screen',
+      'privacy_policy': 'Privacy Policy',
     },
     'es': {
       'app_title': 'sukun',
@@ -226,6 +227,7 @@ class AppLocalizations {
       'cannot_disable_all_sources': 'Debe permanecer activa al menos una fuente de audio.',
       'show_api_source_in_player': 'Mostrar API activa en reproductor',
       'show_api_source_in_player_desc': 'Muestra la insignia del proveedor en la pantalla del reproductor',
+      'privacy_policy': 'Política de privacidad',
     },
     'fr': {
       'app_title': 'sukun',
@@ -329,6 +331,7 @@ class AppLocalizations {
       'cannot_disable_all_sources': 'Au moins une source audio doit rester active.',
       'show_api_source_in_player': 'Afficher l\'API active dans le lecteur',
       'show_api_source_in_player_desc': 'Affiche le badge du fournisseur audio sur l\'écran du lecteur',
+      'privacy_policy': 'Politique de confidentialité',
     },
     'ar': {
       'app_title': 'sukun',
@@ -431,6 +434,7 @@ class AppLocalizations {
       'cannot_disable_all_sources': 'يجب الإبقاء على مصدر صوتي واحد على الأقل نَشِطاً.',
       'show_api_source_in_player': 'عرض مصدر الصوت في المشغل',
       'show_api_source_in_player_desc': 'إظهار اسم الخادم الصوتي الحالي في شاشة المشغل',
+      'privacy_policy': 'سياسة الخصوصية',
     },
   };
 
