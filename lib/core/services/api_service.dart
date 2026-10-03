@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../constants/reciter_blacklist.dart';
 import '../models/audio_api_source.dart';
 import '../models/reciter.dart';
 import '../data/quranic_audio_data.dart';
@@ -14,6 +15,68 @@ class ApiService {
   final http.Client _client;
 
   ApiService({http.Client? client}) : _client = client ?? http.Client();
+
+  /// Detects the recitation type (Riwayah) or language from name and metadata.
+  static String detectRiwayah(String name, {int? rewayaId, String? moshafName}) {
+    if (rewayaId != null) {
+      switch (rewayaId) {
+        case 1:
+        case 21:
+        case 22:
+          return 'Hafs';
+        case 2:
+        case 10:
+        case 18:
+          return 'Warsh';
+        case 3:
+          return 'Khalaf';
+        case 4:
+        case 11:
+          return 'Al-Bazzi';
+        case 5:
+        case 8:
+          return 'Qaloon';
+        case 6:
+          return 'Qunbul';
+        case 7:
+          return 'Al-Sousi';
+        case 9:
+          return 'Rawh';
+        case 12:
+        case 13:
+          return 'Al-Duri';
+        case 15:
+          return "Shu'bah";
+        case 16:
+          return 'Ibn Thakwan';
+        case 19:
+          return 'Hesham';
+        case 20:
+          return 'Ibn Jammaz';
+      }
+    }
+
+    final lower = '${moshafName ?? ''} $name'.toLowerCase();
+    if (lower.contains('english') || lower.contains('translation')) return 'English';
+    if (lower.contains('spanish') || lower.contains('español') || lower.contains('espanol')) return 'Spanish';
+    if (lower.contains('warsh') || lower.contains('warch')) return 'Warsh';
+    if (lower.contains('qaloon') || lower.contains('qalon') || lower.contains('qalun')) return 'Qaloon';
+    if (lower.contains('al-duri') || lower.contains('alduri') || lower.contains('doori') || lower.contains('duri') || lower.contains('dorai')) {
+      return 'Al-Duri';
+    }
+    if (lower.contains('khalaf')) return 'Khalaf';
+    if (lower.contains("shu'bah") || lower.contains('shubah') || lower.contains("sho'bah") || lower.contains('shoubah')) {
+      return "Shu'bah";
+    }
+    if (lower.contains('sousi') || lower.contains('sosi') || lower.contains('soosi')) return 'Al-Sousi';
+    if (lower.contains('bazzi')) return 'Al-Bazzi';
+    if (lower.contains('qunbul') || lower.contains('qunbol')) return 'Qunbul';
+    if (lower.contains('hesham')) return 'Hesham';
+    if (lower.contains('thakwan')) return 'Ibn Thakwan';
+    if (lower.contains('jammaz')) return 'Ibn Jammaz';
+    if (lower.contains('rawh') || lower.contains('ruwais') || lower.contains('rowis')) return 'Rawh';
+    return 'Hafs';
+  }
 
   /// Fetches and merges reciters from all specified active audio API sources.
   Future<List<Reciter>> fetchReciters({
@@ -71,65 +134,81 @@ class ApiService {
           final validMoshafs = moshafList.whereType<Map<String, dynamic>>().toList();
           if (validMoshafs.isEmpty) continue;
 
-          // Prioritize:
-          // 1. Full 114 surahs
-          // 2. Standard Hafs recitation
-          // 3. Highest surah count
-          validMoshafs.sort((a, b) {
-            final aTotal = (a['surah_total'] as num?)?.toInt() ?? 0;
-            final bTotal = (b['surah_total'] as num?)?.toInt() ?? 0;
-            final aName = (a['name'] as String? ?? '').toLowerCase();
-            final bName = (b['name'] as String? ?? '').toLowerCase();
-            final aHafs = aName.contains('hafs');
-            final bHafs = bName.contains('hafs');
-
-            if (aTotal == 114 && bTotal != 114) return -1;
-            if (bTotal == 114 && aTotal != 114) return 1;
-            if (aHafs && !bHafs && aTotal > 0) return -1;
-            if (!aHafs && bHafs && bTotal > 0) return 1;
-            return bTotal.compareTo(aTotal);
-          });
-
-          final moshaf = validMoshafs.first;
-          final serverUrl = moshaf['server'] as String? ?? '';
-          if (serverUrl.isEmpty) continue;
-
-          final moshafName = moshaf['name'] as String? ?? '';
-          final isMujawwad = moshafName.toLowerCase().contains('mujawwad');
-          final style = isMujawwad ? 'Mujawwad' : 'Murattal';
-
           final rawName = item['name'] as String? ?? '';
           if (rawName.isEmpty) continue;
 
-          final id = (item['id'] as num?)?.toInt() ?? 0;
+          final rawId = (item['id'] as num?)?.toInt() ?? 0;
 
-          final audioSources = <ReciterAudioSource>[
-            ReciterAudioSource(
-              apiSource: AudioApiSource.mp3Quran,
-              baseUrlOrPattern: serverUrl,
-            ),
-          ];
+          // Group available moshafs by (riwayah, style) to capture all recitations
+          final Map<String, List<Map<String, dynamic>>> moshafsByGroup = {};
 
-          // Add any alternative complete server (114 surahs) as fallback
-          for (var m = 1; m < validMoshafs.length; m++) {
-            final altServer = validMoshafs[m]['server'] as String? ?? '';
-            final altTotal = (validMoshafs[m]['surah_total'] as num?)?.toInt() ?? 0;
-            if (altServer.isNotEmpty && altServer != serverUrl && altTotal >= 114) {
-              audioSources.add(ReciterAudioSource(
-                apiSource: AudioApiSource.mp3Quran,
-                baseUrlOrPattern: altServer,
-              ));
-              break;
+          for (final m in validMoshafs) {
+            final server = m['server'] as String? ?? '';
+            if (server.isEmpty || ReciterBlacklist.isMp3QuranServerBroken(server)) {
+              continue;
             }
+
+            final moshafName = m['name'] as String? ?? '';
+            final rewayaId = (m['rewaya_id'] as num?)?.toInt();
+            final riwayah = detectRiwayah(rawName, rewayaId: rewayaId, moshafName: moshafName);
+            final isMujawwad = moshafName.toLowerCase().contains('mujawwad');
+            final style = isMujawwad ? 'Mujawwad' : 'Murattal';
+
+            final key = '$riwayah:$style';
+            moshafsByGroup.putIfAbsent(key, () => []).add(m);
           }
 
-          reciters.add(Reciter(
-            id: id,
-            name: rawName,
-            style: style,
-            serverUrl: serverUrl,
-            audioSources: audioSources,
-          ));
+          if (moshafsByGroup.isEmpty) continue;
+
+          int variantIndex = 0;
+          for (final entry in moshafsByGroup.entries) {
+            final groupMoshafs = entry.value;
+
+            // Sort: highest surah_total first
+            groupMoshafs.sort((a, b) {
+              final aTotal = (a['surah_total'] as num?)?.toInt() ?? 0;
+              final bTotal = (b['surah_total'] as num?)?.toInt() ?? 0;
+              return bTotal.compareTo(aTotal);
+            });
+
+            final primaryMoshaf = groupMoshafs.first;
+            final serverUrl = primaryMoshaf['server'] as String? ?? '';
+            if (serverUrl.isEmpty) continue;
+
+            final parts = entry.key.split(':');
+            final riwayah = parts[0];
+            final style = parts[1];
+
+            final audioSources = <ReciterAudioSource>[
+              ReciterAudioSource(
+                apiSource: AudioApiSource.mp3Quran,
+                baseUrlOrPattern: serverUrl,
+              ),
+            ];
+
+            // Add alternative server if available for fallback
+            for (var m = 1; m < groupMoshafs.length; m++) {
+              final altServer = groupMoshafs[m]['server'] as String? ?? '';
+              final altTotal = (groupMoshafs[m]['surah_total'] as num?)?.toInt() ?? 0;
+              if (altServer.isNotEmpty && altServer != serverUrl && altTotal >= 114) {
+                audioSources.add(ReciterAudioSource(
+                  apiSource: AudioApiSource.mp3Quran,
+                  baseUrlOrPattern: altServer,
+                ));
+                break;
+              }
+            }
+
+            reciters.add(Reciter(
+              id: rawId + (variantIndex * 1000000),
+              name: rawName,
+              style: style,
+              riwayah: riwayah,
+              serverUrl: serverUrl,
+              audioSources: audioSources,
+            ));
+            variantIndex++;
+          }
         }
 
         return reciters;
@@ -164,7 +243,9 @@ class ApiService {
 
     for (final item in source) {
       final relPath = item['relative_path'] as String? ?? '';
-      if (relPath.isEmpty) continue;
+      if (relPath.isEmpty || ReciterBlacklist.isQuranicAudioPathBroken(relPath)) {
+        continue;
+      }
 
       final rawName = item['name'] as String? ?? '';
       if (rawName.isEmpty) continue;
@@ -180,6 +261,7 @@ class ApiService {
 
       final isMujawwad = lower.contains('mujawwad');
       final style = isMujawwad ? 'Mujawwad' : 'Murattal';
+      final riwayah = detectRiwayah(rawName);
 
       final arabicName = item['arabic_name'] as String?;
       final rawId = (item['id'] as num?)?.toInt() ?? 0;
@@ -188,6 +270,7 @@ class ApiService {
         id: 100000 + rawId, // offset ID to avoid collision before deduplication
         name: rawName,
         style: style,
+        riwayah: riwayah,
         serverUrl: 'https://download.quranicaudio.com/quran/$relPath',
         arabicName: arabicName,
         audioSources: [
@@ -241,6 +324,7 @@ class ApiService {
           final isMujawwad = rawName.toLowerCase().contains('mujawwad') ||
               identifier.toLowerCase().contains('mujawwad');
           final style = isMujawwad ? 'Mujawwad' : 'Murattal';
+          final riwayah = detectRiwayah('$rawName $identifier');
 
           final cleanId = identifier.replaceAll('-surah', '');
           final serverUrl = 'https://cdn.islamic.network/quran/audio-surah/128/$cleanId/';
@@ -249,6 +333,7 @@ class ApiService {
             id: ++syntheticId,
             name: rawName,
             style: style,
+            riwayah: riwayah,
             serverUrl: serverUrl,
             arabicName: arabicName,
             audioSources: [
@@ -277,19 +362,20 @@ class ApiService {
       final canonicalKey = ReciterNormalizer.getMatchKey(canonicalName);
       if (canonicalKey.isEmpty) continue;
 
-      // Group strictly by canonical identity + style (Murattal vs Mujawwad)
-      final groupKey = '$canonicalKey:${r.style.toLowerCase()}';
+      // Group strictly by canonical identity + riwayah + style
+      final groupKey = '$canonicalKey:${r.riwayah.toLowerCase()}:${r.style.toLowerCase()}';
 
       if (mergedMap.containsKey(groupKey)) {
         final existing = mergedMap[groupKey]!;
         mergedMap[groupKey] = existing.mergeWith(r);
       } else {
-        // Generate a stable numeric ID derived from canonicalKey + style hash
+        // Generate a stable numeric ID derived from canonicalKey + riwayah + style hash
         final stableId = _generateStableId(groupKey);
         mergedMap[groupKey] = Reciter(
           id: stableId,
           name: canonicalName,
           style: r.style,
+          riwayah: r.riwayah,
           serverUrl: r.serverUrl,
           arabicName: r.arabicName,
           audioSources: List<ReciterAudioSource>.from(r.audioSources),
@@ -298,7 +384,11 @@ class ApiService {
     }
 
     final list = mergedMap.values.toList();
-    list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    list.sort((a, b) {
+      final nameCmp = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      if (nameCmp != 0) return nameCmp;
+      return a.riwayah.compareTo(b.riwayah);
+    });
     return list;
   }
 

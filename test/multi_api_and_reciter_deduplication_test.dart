@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:quran_player/core/models/audio_api_source.dart';
-import 'package:quran_player/core/models/reciter.dart';
-import 'package:quran_player/core/services/reciter_normalizer.dart';
-import 'package:quran_player/shared/providers/settings_provider.dart';
-import 'package:quran_player/shared/providers/player_provider.dart';
+import 'package:sukun/core/models/audio_api_source.dart';
+import 'package:sukun/core/models/reciter.dart';
+import 'package:sukun/core/services/reciter_normalizer.dart';
+import 'package:sukun/shared/providers/settings_provider.dart';
+import 'package:sukun/shared/providers/player_provider.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

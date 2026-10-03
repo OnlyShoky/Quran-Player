@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:quran_player/app.dart';
+import 'package:sukun/app.dart';
 
 void main() {
   testWidgets('App smoke test - renders without crashing',

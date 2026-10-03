@@ -3,13 +3,13 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
-import 'package:quran_player/core/localization/app_localizations.dart';
-import 'package:quran_player/shared/providers/settings_provider.dart';
-import 'package:quran_player/shared/providers/view_mode_provider.dart';
-import 'package:quran_player/shared/providers/playlist_provider.dart';
-import 'package:quran_player/shared/providers/player_provider.dart';
-import 'package:quran_player/features/surah_list/surah_list_screen.dart';
-import 'package:quran_player/shared/widgets/view_mode_tutorial_overlay.dart';
+import 'package:sukun/core/localization/app_localizations.dart';
+import 'package:sukun/shared/providers/settings_provider.dart';
+import 'package:sukun/shared/providers/view_mode_provider.dart';
+import 'package:sukun/shared/providers/playlist_provider.dart';
+import 'package:sukun/shared/providers/player_provider.dart';
+import 'package:sukun/features/surah_list/surah_list_screen.dart';
+import 'package:sukun/shared/widgets/view_mode_tutorial_overlay.dart';
 
 void main() {
   setUp(() {

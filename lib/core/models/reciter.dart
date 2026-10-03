@@ -20,6 +20,8 @@ class Reciter {
   final String? arabicName;
   final List<ReciterAudioSource> audioSources;
 
+  final String riwayah; // e.g. "Hafs", "Warsh", "Al-Duri", etc.
+
   const Reciter({
     required this.id,
     required this.name,
@@ -27,6 +29,7 @@ class Reciter {
     required this.serverUrl,
     this.arabicName,
     this.audioSources = const [],
+    this.riwayah = 'Hafs',
   });
 
   String get shortName {
@@ -96,6 +99,7 @@ class Reciter {
     String? serverUrl,
     String? arabicName,
     List<ReciterAudioSource>? audioSources,
+    String? riwayah,
   }) {
     return Reciter(
       id: id ?? this.id,
@@ -104,6 +108,7 @@ class Reciter {
       serverUrl: serverUrl ?? this.serverUrl,
       arabicName: arabicName ?? this.arabicName,
       audioSources: audioSources ?? this.audioSources,
+      riwayah: riwayah ?? this.riwayah,
     );
   }
 
@@ -123,12 +128,16 @@ class Reciter {
       serverUrl: serverUrl.isNotEmpty ? serverUrl : other.serverUrl,
       arabicName: arabicName ?? other.arabicName,
       audioSources: mergedSources,
+      riwayah: (riwayah.isNotEmpty && riwayah != 'Hafs')
+          ? riwayah
+          : (other.riwayah.isNotEmpty ? other.riwayah : 'Hafs'),
     );
   }
 
   factory Reciter.fromJson(Map<String, dynamic> json) {
     String serverUrl = '';
     String style = '';
+    String riwayah = json['riwayah'] as String? ?? 'Hafs';
 
     if (json['moshaf'] != null && (json['moshaf'] as List).isNotEmpty) {
       final moshafList = (json['moshaf'] as List).whereType<Map<String, dynamic>>().toList();
@@ -164,6 +173,7 @@ class Reciter {
       name: name,
       style: style,
       serverUrl: serverUrl,
+      riwayah: riwayah,
       audioSources: serverUrl.isNotEmpty
           ? [
               ReciterAudioSource(

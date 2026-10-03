@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:device_preview/presets.dart';
-import 'package:quran_player/shared/widgets/device_preview_switcher.dart';
+import 'package:sukun/shared/widgets/device_preview_switcher.dart';
 
 void main() {
   test('DevicePresets contains iPhone and other devices', () {
