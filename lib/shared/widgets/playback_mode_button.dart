@@ -15,18 +15,22 @@ class PlaybackModeButton extends StatelessWidget {
     this.showBackgroundOnActive = false,
   });
 
+  /// Cycle: next -> loopPlaylist -> repeat -> next
   void _cycleMode(BuildContext context) {
     final settings = context.read<SettingsProvider>();
     final current = settings.playbackCompletion;
 
     final nextAction = switch (current) {
+      PlaybackCompletionAction.next => PlaybackCompletionAction.loopPlaylist,
+      PlaybackCompletionAction.loopPlaylist => PlaybackCompletionAction.repeat,
       PlaybackCompletionAction.repeat => PlaybackCompletionAction.next,
-      _ => PlaybackCompletionAction.repeat,
+      _ => PlaybackCompletionAction.next,
     };
 
     settings.setPlaybackCompletion(nextAction);
 
     final msg = switch (nextAction) {
+      PlaybackCompletionAction.loopPlaylist => context.tr('playback_loop'),
       PlaybackCompletionAction.repeat => context.tr('playback_repeat'),
       _ => context.tr('playback_next'),
     };
@@ -81,7 +85,8 @@ class PlaybackModeButton extends StatelessWidget {
                 _buildModalTile(
                   context,
                   title: context.tr('playback_next'),
-                  icon: Icons.repeat_rounded,
+                  subtitle: context.tr('playback_next_desc'),
+                  icon: Icons.skip_next_rounded,
                   action: PlaybackCompletionAction.next,
                   current: settings.playbackCompletion,
                   onSelect: (a) {
@@ -91,7 +96,20 @@ class PlaybackModeButton extends StatelessWidget {
                 ),
                 _buildModalTile(
                   context,
+                  title: context.tr('playback_loop'),
+                  subtitle: context.tr('playback_loop_desc'),
+                  icon: Icons.loop_rounded,
+                  action: PlaybackCompletionAction.loopPlaylist,
+                  current: settings.playbackCompletion,
+                  onSelect: (a) {
+                    settings.setPlaybackCompletion(a);
+                    Navigator.pop(ctx);
+                  },
+                ),
+                _buildModalTile(
+                  context,
                   title: context.tr('playback_repeat'),
+                  subtitle: context.tr('playback_repeat_desc'),
                   icon: Icons.repeat_one_rounded,
                   action: PlaybackCompletionAction.repeat,
                   current: settings.playbackCompletion,
@@ -111,6 +129,7 @@ class PlaybackModeButton extends StatelessWidget {
   Widget _buildModalTile(
     BuildContext context, {
     required String title,
+    required String subtitle,
     required IconData icon,
     required PlaybackCompletionAction action,
     required PlaybackCompletionAction current,
@@ -137,6 +156,14 @@ class PlaybackModeButton extends StatelessWidget {
               : null,
         ),
       ),
+      subtitle: subtitle.isNotEmpty
+          ? Text(
+              subtitle,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
+              ),
+            )
+          : null,
       trailing: isSelected
           ? Icon(
               Icons.check_circle_rounded,
@@ -158,12 +185,17 @@ class PlaybackModeButton extends StatelessWidget {
       PlaybackCompletionAction.repeat => (
           Icons.repeat_one_rounded,
           'playback_repeat',
-          true
+          true,
+        ),
+      PlaybackCompletionAction.loopPlaylist => (
+          Icons.loop_rounded,
+          'playback_loop',
+          true,
         ),
       _ => (
-          Icons.repeat_rounded,
+          Icons.skip_next_rounded,
           'playback_next',
-          false
+          false,
         ),
     };
 

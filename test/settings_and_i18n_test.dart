@@ -40,6 +40,12 @@ void main() {
       expect(es.translate('verses_count', {'count': '7'}), '7 aleyas');
       expect(fr.translate('verses_count', {'count': '7'}), '7 versets');
       expect(ar.translate('verses_count', {'count': '7'}), '7 آية');
+
+      // Check playback loop keys
+      expect(en.translate('playback_loop'), 'Loop Playlist');
+      expect(es.translate('playback_loop'), 'Bucle de playlist');
+      expect(fr.translate('playback_loop'), 'Boucle de lecture');
+      expect(ar.translate('playback_loop'), 'تكرار قائمة التشغيل');
     });
   });
 
@@ -87,10 +93,19 @@ void main() {
       final settings = SettingsProvider();
       await Future.delayed(const Duration(milliseconds: 50));
 
-      await settings.setPlaybackCompletion(PlaybackCompletionAction.repeat);
-      expect(settings.playbackCompletion, PlaybackCompletionAction.repeat);
+      await settings.setPlaybackCompletion(PlaybackCompletionAction.loopPlaylist);
+      expect(settings.playbackCompletion, PlaybackCompletionAction.loopPlaylist);
 
       final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('app_playback_completion'), 'loopPlaylist');
+
+      // Test loading persisted loopPlaylist
+      final newSettings = SettingsProvider();
+      await Future.delayed(const Duration(milliseconds: 50));
+      expect(newSettings.playbackCompletion, PlaybackCompletionAction.loopPlaylist);
+
+      await settings.setPlaybackCompletion(PlaybackCompletionAction.repeat);
+      expect(settings.playbackCompletion, PlaybackCompletionAction.repeat);
       expect(prefs.getString('app_playback_completion'), 'repeat');
     });
   });
@@ -219,7 +234,15 @@ void main() {
 
       // Initial state: next
       expect(settingsProvider.playbackCompletion, PlaybackCompletionAction.next);
-      expect(find.byIcon(Icons.repeat_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.skip_next_rounded), findsOneWidget);
+
+      // Tap to switch to loopPlaylist
+      await tester.tap(find.byType(PlaybackModeButton));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
+
+      expect(settingsProvider.playbackCompletion, PlaybackCompletionAction.loopPlaylist);
+      expect(find.byIcon(Icons.loop_rounded), findsOneWidget);
 
       // Tap to switch to repeat
       await tester.tap(find.byType(PlaybackModeButton));
@@ -235,7 +258,7 @@ void main() {
       await tester.pump(const Duration(seconds: 2));
 
       expect(settingsProvider.playbackCompletion, PlaybackCompletionAction.next);
-      expect(find.byIcon(Icons.repeat_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.skip_next_rounded), findsOneWidget);
     });
   });
 }

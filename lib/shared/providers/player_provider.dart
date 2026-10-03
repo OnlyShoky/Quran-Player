@@ -357,12 +357,26 @@ class PlayerProvider extends ChangeNotifier {
         _state = PlaybackState.stopped;
         notifyListeners();
         break;
+      case PlaybackCompletionAction.loopPlaylist:
+        // When playlist ends, wrap around to the first track
+        if (_playlistProvider != null && _playlistProvider!.items.isNotEmpty) {
+          if (_currentIndex < _playlistProvider!.items.length - 1) {
+            playIndex(_currentIndex + 1);
+          } else {
+            // Last track finished → loop back to beginning
+            playIndex(0);
+          }
+        } else {
+          _state = PlaybackState.stopped;
+          notifyListeners();
+        }
+        break;
       case PlaybackCompletionAction.next:
         if (_playlistProvider != null && _playlistProvider!.items.isNotEmpty) {
           if (_currentIndex < _playlistProvider!.items.length - 1) {
             playIndex(_currentIndex + 1);
           } else {
-            // End of playlist reached
+            // End of playlist reached, stop
             _state = PlaybackState.stopped;
             notifyListeners();
           }
