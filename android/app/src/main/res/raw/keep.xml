@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  This file tells the Android resource shrinker to keep resources that are
+  referenced only at runtime (from Dart/Flutter code) and would otherwise
+  be stripped from the release build.
+
+  In particular, ic_notification is used by audio_service for the media
+  playback notification but is referenced via a string in Dart, which R8
+  cannot trace statically.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_notification" />

@@ -1,8 +1,8 @@
-name: quran_player
+name: sukun
 description: "sukun — A minimalist Quran audio player. Qur'an, without distractions."
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.0.0+3
 
 environment:
   sdk: ^3.13.1
