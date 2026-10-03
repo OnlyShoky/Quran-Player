@@ -1,8 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sukun/core/constants/reciter_blacklist.dart';
 import 'package:sukun/core/models/reciter.dart';
 import 'package:sukun/core/models/audio_api_source.dart';
 import 'package:sukun/core/services/api_service.dart';
+import 'package:sukun/shared/providers/playlist_provider.dart';
 
 void main() {
   group('ReciterBlacklist Tests', () {
@@ -107,4 +109,80 @@ void main() {
       expect(merged.audioSources.length, 2);
     });
   });
+
+  group('Reciter Pinning & Favorites Integration Tests', () {
+    setUp(() {
+      SharedPreferences.setMockInitialValues({});
+    });
+
+    test('Pinning a reciter automatically adds them to favorites', () async {
+      final provider = PlaylistProvider();
+      await Future.delayed(const Duration(milliseconds: 20));
+
+      final success = await provider.togglePinReciter(101);
+      expect(success, isTrue);
+      expect(provider.isPinned(101), isTrue);
+      expect(provider.isFavorite(101), isTrue);
+    });
+
+    test('Unpinning a reciter keeps them in favorites but removes the pin', () async {
+      final provider = PlaylistProvider();
+      await Future.delayed(const Duration(milliseconds: 20));
+
+      await provider.togglePinReciter(101);
+      expect(provider.isPinned(101), isTrue);
+      expect(provider.isFavorite(101), isTrue);
+
+      final unpinSuccess = await provider.togglePinReciter(101);
+      expect(unpinSuccess, isTrue);
+      expect(provider.isPinned(101), isFalse);
+      expect(provider.isFavorite(101), isTrue); // Retains favorite
+    });
+
+    test('Enforces maximum of 3 pinned reciters', () async {
+      final provider = PlaylistProvider();
+      await Future.delayed(const Duration(milliseconds: 20));
+
+      expect(await provider.togglePinReciter(1), isTrue);
+      expect(await provider.togglePinReciter(2), isTrue);
+      expect(await provider.togglePinReciter(3), isTrue);
+      expect(await provider.togglePinReciter(4), isFalse); // Reached limit 3
+
+      expect(provider.pinnedReciterIds.length, 3);
+    });
+
+    test('Prunes ghost/stale IDs so users are not blocked by obsolete pins', () async {
+      SharedPreferences.setMockInitialValues({
+        'pinned_reciter_ids': ['9991', '9992', '9993'],
+      });
+
+      final mockReciters = [
+        const Reciter(id: 101, name: 'Reciter 1', style: 'Murattal', serverUrl: 'https://test/1/'),
+        const Reciter(id: 102, name: 'Reciter 2', style: 'Murattal', serverUrl: 'https://test/2/'),
+      ];
+
+      final provider = PlaylistProvider(apiService: _FakeApiService(mockReciters));
+      await Future.delayed(const Duration(milliseconds: 20));
+
+      // Trigger fetch which will load mockReciters and prune ghost IDs
+      await provider.refreshReciters();
+
+      expect(provider.pinnedReciterIds, isEmpty);
+
+      // Now user can pin new valid reciters without hitting max limit
+      expect(await provider.togglePinReciter(101), isTrue);
+      expect(provider.isPinned(101), isTrue);
+      expect(provider.isFavorite(101), isTrue);
+    });
+  });
+}
+
+class _FakeApiService extends ApiService {
+  final List<Reciter> mockReciters;
+  _FakeApiService(this.mockReciters);
+
+  @override
+  Future<List<Reciter>> fetchReciters({Set<AudioApiSource>? enabledSources}) async {
+    return mockReciters;
+  }
 }

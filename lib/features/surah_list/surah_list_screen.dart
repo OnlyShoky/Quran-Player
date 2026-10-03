@@ -14,7 +14,6 @@ import '../../shared/providers/view_mode_provider.dart';
 import '../../shared/widgets/surah_tile.dart';
 import '../../shared/widgets/mosaic_grid_view.dart';
 import '../../shared/widgets/reciter_selector_sheet.dart';
-import '../../shared/widgets/reciter_type_badge.dart';
 import '../../shared/widgets/view_mode_tutorial_overlay.dart';
 import '../../shared/utils/app_snackbar.dart';
 
@@ -879,23 +878,13 @@ class _ReciterSelectorHeader extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 1),
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              selectedReciter?.name ?? context.tr('select_reciter'),
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (selectedReciter != null && selectedReciter.riwayah.isNotEmpty) ...[
-                            const SizedBox(width: 6),
-                            ReciterTypeBadge(riwayah: selectedReciter.riwayah),
-                          ],
-                        ],
+                      Text(
+                        selectedReciter?.name ?? context.tr('select_reciter'),
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),

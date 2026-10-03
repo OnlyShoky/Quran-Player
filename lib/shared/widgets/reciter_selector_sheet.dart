@@ -345,11 +345,19 @@ class _ReciterSelectorSheetState extends State<ReciterSelectorSheet> {
 
     final sortedReciters = List<Reciter>.from(filteredReciters)
       ..sort((a, b) {
+        final aPin = playlist.isPinned(a.id);
+        final bPin = playlist.isPinned(b.id);
+        if (aPin && !bPin) return -1;
+        if (!aPin && bPin) return 1;
+
         final aFav = playlist.isFavorite(a.id);
         final bFav = playlist.isFavorite(b.id);
         if (aFav && !bFav) return -1;
         if (!aFav && bFav) return 1;
-        return 0;
+
+        final nameCmp = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        if (nameCmp != 0) return nameCmp;
+        return a.riwayah.compareTo(b.riwayah);
       });
 
     return DraggableScrollableSheet(
@@ -522,8 +530,7 @@ class _ReciterSelectorSheetState extends State<ReciterSelectorSheet> {
                                   Flexible(
                                     child: Text(
                                       reciter.name,
-                                      style: theme.textTheme.titleMedium
-                                          ?.copyWith(
+                                      style: theme.textTheme.titleMedium?.copyWith(
                                         color: isSelected
                                             ? theme.colorScheme.primary
                                             : null,

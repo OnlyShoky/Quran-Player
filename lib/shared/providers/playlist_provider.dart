@@ -104,14 +104,7 @@ class PlaylistProvider extends ChangeNotifier {
     } catch (_) {}
   }
 
-  Future<void> toggleFavoriteReciter(int reciterId) async {
-    if (_favoriteReciterIds.contains(reciterId)) {
-      _favoriteReciterIds.remove(reciterId);
-    } else {
-      _favoriteReciterIds.add(reciterId);
-    }
-    notifyListeners();
-
+  Future<void> _saveFavoritePreferences() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList(
@@ -121,17 +114,7 @@ class PlaylistProvider extends ChangeNotifier {
     } catch (_) {}
   }
 
-  Future<bool> togglePinReciter(int reciterId) async {
-    if (_pinnedReciterIds.contains(reciterId)) {
-      _pinnedReciterIds.remove(reciterId);
-    } else {
-      if (_pinnedReciterIds.length >= 3) {
-        return false; // Reached limit of 3
-      }
-      _pinnedReciterIds.add(reciterId);
-    }
-    notifyListeners();
-
+  Future<void> _savePinnedPreferences() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList(
@@ -139,6 +122,41 @@ class PlaylistProvider extends ChangeNotifier {
         _pinnedReciterIds.map((id) => id.toString()).toList(),
       );
     } catch (_) {}
+  }
+
+  Future<void> toggleFavoriteReciter(int reciterId) async {
+    if (_favoriteReciterIds.contains(reciterId)) {
+      _favoriteReciterIds.remove(reciterId);
+    } else {
+      _favoriteReciterIds.add(reciterId);
+    }
+    notifyListeners();
+    await _saveFavoritePreferences();
+  }
+
+  Future<bool> togglePinReciter(int reciterId) async {
+    // Sanitize any ghost/stale IDs first if reciters are loaded
+    if (_reciters.isNotEmpty) {
+      final validIds = _reciters.map((r) => r.id).toSet();
+      _pinnedReciterIds.removeWhere((id) => !validIds.contains(id));
+    }
+
+    if (_pinnedReciterIds.contains(reciterId)) {
+      _pinnedReciterIds.remove(reciterId);
+      // Unpinning does not remove from favorites, only removes the pin
+    } else {
+      if (_pinnedReciterIds.length >= 3) {
+        return false; // Reached limit of 3
+      }
+      _pinnedReciterIds.add(reciterId);
+      // Pinning automatically adds the reciter to favorites
+      if (!_favoriteReciterIds.contains(reciterId)) {
+        _favoriteReciterIds.add(reciterId);
+        await _saveFavoritePreferences();
+      }
+    }
+    notifyListeners();
+    await _savePinnedPreferences();
 
     return true;
   }
@@ -153,6 +171,16 @@ class PlaylistProvider extends ChangeNotifier {
       if (_selectedReciterId == null ||
           !_reciters.any((r) => r.id == _selectedReciterId)) {
         _selectedReciterId = _reciters.first.id;
+      }
+      // Purge any stale/ghost IDs from preferences so users (e.g. in Firefox)
+      // don't get blocked by old IDs that don't match current reciters.
+      if (_pinnedReciterIds.isNotEmpty) {
+        final validIds = _reciters.map((r) => r.id).toSet();
+        final beforeCount = _pinnedReciterIds.length;
+        _pinnedReciterIds.removeWhere((id) => !validIds.contains(id));
+        if (_pinnedReciterIds.length != beforeCount) {
+          _savePinnedPreferences();
+        }
       }
     } else {
       _selectedReciterId = null;
