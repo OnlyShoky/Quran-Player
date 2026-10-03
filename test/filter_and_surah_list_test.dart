@@ -136,6 +136,46 @@ void main() {
       );
       expect(find.text('Al-Baqarah'), findsOneWidget);
     });
+
+    testWidgets('renders reciter header with 3 pinned reciters on 360px screen without overflow or vertical expansion', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(360, 780);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      final playlist = PlaylistProvider();
+      await Future.delayed(const Duration(milliseconds: 20));
+      await playlist.togglePinReciter(1);
+      await playlist.togglePinReciter(2);
+      await playlist.togglePinReciter(3);
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider(create: (_) => SettingsProvider()),
+            ChangeNotifierProvider(create: (_) => ViewModeProvider()),
+            ChangeNotifierProvider.value(value: playlist),
+            ChangeNotifierProvider(create: (_) => PlayerProvider()),
+          ],
+          child: const MaterialApp(
+            locale: Locale('es'),
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: SurahListScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('RECITADOR'), findsOneWidget);
+      expect(find.byIcon(Icons.push_pin_rounded), findsNWidgets(3));
+    });
   });
 
   group('SurahListScreen Filter & Reverse UI Tests', () {

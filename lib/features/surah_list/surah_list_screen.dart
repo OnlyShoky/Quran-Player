@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/data/mock_data.dart';
 import '../../core/data/surah_filter_data.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/models/reciter.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../shared/providers/playlist_provider.dart';
 import '../../shared/providers/player_provider.dart';
@@ -833,99 +834,106 @@ class _ReciterSelectorHeader extends StatelessWidget {
     }
 
     Widget buildMainCard({required bool isCompact}) {
-      return Material(
-        color: isDark
-            ? AppColors.surfaceContainerDark
-            : AppColors.surfaceContainerLight,
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          onTap: () => showReciterSelectorModal(context),
+      return SizedBox(
+        height: 54,
+        child: Material(
+          color: isDark
+              ? AppColors.surfaceContainerDark
+              : AppColors.surfaceContainerLight,
           borderRadius: BorderRadius.circular(14),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: isCompact ? 10 : 14,
-              vertical: 10,
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.mic_rounded,
-                    color: theme.colorScheme.primary,
-                    size: 18,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        context.tr('reciter_label').toUpperCase(),
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: isDark
-                              ? AppColors.mutedDark
-                              : AppColors.mutedLight,
-                          letterSpacing: 0.8,
-                          fontSize: 9,
-                        ),
-                      ),
-                      const SizedBox(height: 1),
-                      Text(
-                        selectedReciter?.name ?? context.tr('select_reciter'),
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                if (!isCompact) ...[
-                  const SizedBox(width: 6),
+          child: InkWell(
+            onTap: () => showReciterSelectorModal(context),
+            borderRadius: BorderRadius.circular(14),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: isCompact ? 8 : 14,
+                vertical: 0,
+              ),
+              child: Row(
+                children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
+                    width: isCompact ? 30 : 34,
+                    height: isCompact ? 30 : 34,
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primary,
-                      borderRadius: BorderRadius.circular(20),
+                      color: theme.colorScheme.primary.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
                     ),
-                    child: Row(
+                    child: Icon(
+                      Icons.mic_rounded,
+                      color: theme.colorScheme.primary,
+                      size: isCompact ? 16 : 18,
+                    ),
+                  ),
+                  SizedBox(width: isCompact ? 6 : 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          context.tr('change_reciter'),
+                          context.tr('reciter_label').toUpperCase(),
                           style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.onPrimary,
-                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? AppColors.mutedDark
+                                : AppColors.mutedLight,
+                            letterSpacing: 0.8,
+                            fontSize: 9,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.unfold_more_rounded,
-                          size: 14,
-                          color: theme.colorScheme.onPrimary,
+                        const SizedBox(height: 1),
+                        Text(
+                          selectedReciter?.name ?? context.tr('select_reciter'),
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            fontSize: isCompact ? 13 : null,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
                   ),
-                ] else ...[
-                  Icon(
-                    Icons.unfold_more_rounded,
-                    size: 16,
-                    color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
-                  ),
+                  if (!isCompact) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            context.tr('change_reciter'),
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.onPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.unfold_more_rounded,
+                            size: 14,
+                            color: theme.colorScheme.onPrimary,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ] else ...[
+                    const SizedBox(width: 2),
+                    Icon(
+                      Icons.unfold_more_rounded,
+                      size: 14,
+                      color: isDark ? AppColors.mutedDark : AppColors.mutedLight,
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),
@@ -939,75 +947,121 @@ class _ReciterSelectorHeader extends StatelessWidget {
       );
     }
 
+    Widget buildPinnedButton(Reciter r) {
+      final isSelected = playlist.selectedReciterId == r.id;
+      return Tooltip(
+        message: r.name,
+        child: Material(
+          color: isSelected
+              ? theme.colorScheme.primary
+              : (isDark
+                    ? AppColors.surfaceContainerDark
+                    : AppColors.surfaceContainerLight),
+          borderRadius: BorderRadius.circular(14),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () {
+              playlist.selectReciter(r.id);
+              player.selectReciter(r);
+            },
+            child: Container(
+              height: 54,
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              alignment: Alignment.center,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.push_pin_rounded,
+                    size: 13,
+                    color: isSelected
+                        ? theme.colorScheme.onPrimary
+                        : theme.colorScheme.primary,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    r.shortName,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: isSelected
+                          ? theme.colorScheme.onPrimary
+                          : (isDark
+                                ? AppColors.onSurfaceDark
+                                : AppColors.onSurfaceLight),
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                      fontSize: 9.5,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    Widget buildPinnedRow() {
+      if (pinnedReciters.length == 1) {
+        return Row(
+          children: [
+            Expanded(child: buildMainCard(isCompact: true)),
+            const SizedBox(width: 8),
+            ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 64, maxWidth: 84),
+              child: buildPinnedButton(pinnedReciters[0]),
+            ),
+          ],
+        );
+      }
+
+      if (pinnedReciters.length == 2) {
+        return Row(
+          children: [
+            Expanded(flex: 5, child: buildMainCard(isCompact: true)),
+            const SizedBox(width: 6),
+            Expanded(
+              flex: 5,
+              child: Row(
+                children: [
+                  Expanded(child: buildPinnedButton(pinnedReciters[0])),
+                  const SizedBox(width: 4),
+                  Expanded(child: buildPinnedButton(pinnedReciters[1])),
+                ],
+              ),
+            ),
+          ],
+        );
+      }
+
+      // 3 pinned reciters: distribute with 9:11 ratio so main card has ~145px
+      // and each pinned button has ~56px on a 360px screen.
+      return Row(
+        children: [
+          Expanded(flex: 9, child: buildMainCard(isCompact: true)),
+          const SizedBox(width: 6),
+          Expanded(
+            flex: 11,
+            child: Row(
+              children: [
+                Expanded(child: buildPinnedButton(pinnedReciters[0])),
+                const SizedBox(width: 4),
+                Expanded(child: buildPinnedButton(pinnedReciters[1])),
+                const SizedBox(width: 4),
+                Expanded(child: buildPinnedButton(pinnedReciters[2])),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: Row(
-        children: [
-          // Main bar on left
-          Expanded(flex: 5, child: buildMainCard(isCompact: true)),
-          const SizedBox(width: 8),
-
-          // Quick-select pinned reciter buttons on right
-          ...pinnedReciters.map((r) {
-            final isSelected = playlist.selectedReciterId == r.id;
-            return Padding(
-              padding: const EdgeInsets.only(left: 4),
-              child: Tooltip(
-                message: r.name,
-                child: Material(
-                  color: isSelected
-                      ? theme.colorScheme.primary
-                      : (isDark
-                            ? AppColors.surfaceContainerDark
-                            : AppColors.surfaceContainerLight),
-                  borderRadius: BorderRadius.circular(14),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(14),
-                    onTap: () {
-                      playlist.selectReciter(r.id);
-                      player.selectReciter(r);
-                    },
-                    child: Container(
-                      height: 54,
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      constraints: const BoxConstraints(minWidth: 52),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.push_pin_rounded,
-                            size: 14,
-                            color: isSelected
-                                ? theme.colorScheme.onPrimary
-                                : theme.colorScheme.primary,
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            r.shortName,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: isSelected
-                                  ? theme.colorScheme.onPrimary
-                                  : (isDark
-                                        ? AppColors.onSurfaceDark
-                                        : AppColors.onSurfaceLight),
-                              fontWeight: isSelected
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                              fontSize: 10,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            );
-          }),
-        ],
-      ),
+      child: buildPinnedRow(),
     );
   }
 }
