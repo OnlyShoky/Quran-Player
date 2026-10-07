@@ -153,13 +153,11 @@ void main() {
         const Reciter(id: 3, name: 'Abdul Azeez Al-Hakami', style: 'Murattal', serverUrl: 'https://test/3/'),
       ];
 
-      SharedPreferences.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues({
+        'pinned_reciter_ids': ['1', '2', '3'],
+      });
       final playlist = PlaylistProvider(apiService: _FakeApiService(mockReciters));
-      await Future.delayed(const Duration(milliseconds: 50));
       await playlist.refreshReciters();
-      await playlist.togglePinReciter(1);
-      await playlist.togglePinReciter(2);
-      await playlist.togglePinReciter(3);
 
       await tester.pumpWidget(
         MultiProvider(
