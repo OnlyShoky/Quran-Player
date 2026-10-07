@@ -79,6 +79,15 @@ class PlaylistProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Disable any active random reciter mode.
+  void disableRandomModes() {
+    if (_isRandomReciterMode || _isRandomFavReciterMode) {
+      _isRandomReciterMode = false;
+      _isRandomFavReciterMode = false;
+      notifyListeners();
+    }
+  }
+
   /// Pick a random reciter from all available reciters (excluding current if possible).
   Reciter? pickRandomReciter({int? excludeId}) {
     if (_reciters.isEmpty) return null;

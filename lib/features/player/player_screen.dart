@@ -199,7 +199,10 @@ class PlayerScreen extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      Icons.mic_rounded,
+                      (playlist.isRandomReciterMode ||
+                              playlist.isRandomFavReciterMode)
+                          ? Icons.shuffle_rounded
+                          : Icons.mic_rounded,
                       size: 16,
                       color: theme.colorScheme.primary,
                     ),

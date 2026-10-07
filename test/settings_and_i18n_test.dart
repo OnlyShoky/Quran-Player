@@ -138,6 +138,21 @@ void main() {
       expect(player.isDismissed, isFalse);
       expect(player.currentSurah?.id, 1);
     });
+
+    test('stop() clears the playlist items and resets state', () {
+      final playlist = PlaylistProvider();
+      final player = PlayerProvider();
+      player.updatePlaylistProvider(playlist);
+
+      playlist.addSurah(1);
+      playlist.addSurah(2);
+      expect(playlist.items.length, 2);
+
+      player.stop();
+      expect(player.state, PlaybackState.stopped);
+      expect(player.isDismissed, isTrue);
+      expect(playlist.items, isEmpty);
+    });
   });
 
   group('SettingsScreen Widget Tests', () {
@@ -251,6 +266,14 @@ void main() {
 
       expect(settingsProvider.playbackCompletion, PlaybackCompletionAction.repeat);
       expect(find.byIcon(Icons.repeat_one_rounded), findsOneWidget);
+
+      // Tap to switch to randomSurah
+      await tester.tap(find.byType(PlaybackModeButton));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
+
+      expect(settingsProvider.playbackCompletion, PlaybackCompletionAction.randomSurah);
+      expect(find.byIcon(Icons.shuffle_rounded), findsOneWidget);
 
       // Tap to toggle back to next
       await tester.tap(find.byType(PlaybackModeButton));

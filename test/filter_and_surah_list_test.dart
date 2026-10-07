@@ -153,7 +153,9 @@ void main() {
         const Reciter(id: 3, name: 'Abdul Azeez Al-Hakami', style: 'Murattal', serverUrl: 'https://test/3/'),
       ];
 
+      SharedPreferences.setMockInitialValues({});
       final playlist = PlaylistProvider(apiService: _FakeApiService(mockReciters));
+      await Future.delayed(const Duration(milliseconds: 50));
       await playlist.refreshReciters();
       await playlist.togglePinReciter(1);
       await playlist.togglePinReciter(2);
@@ -169,6 +171,7 @@ void main() {
           ],
           child: const MaterialApp(
             locale: Locale('es'),
+            supportedLocales: AppLocalizations.supportedLocales,
             localizationsDelegates: [
               AppLocalizations.delegate,
               GlobalMaterialLocalizations.delegate,

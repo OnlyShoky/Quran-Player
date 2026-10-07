@@ -171,6 +171,49 @@ void main() {
       expect(provider.isPinned(101), isTrue);
       expect(provider.isFavorite(101), isFalse);
     });
+
+    test('Random reciter mode toggles correctly and mutually exclusively with fav random', () async {
+      final provider = PlaylistProvider();
+      expect(provider.isRandomReciterMode, isFalse);
+      expect(provider.isRandomFavReciterMode, isFalse);
+
+      provider.toggleRandomReciterMode();
+      expect(provider.isRandomReciterMode, isTrue);
+      expect(provider.isRandomFavReciterMode, isFalse);
+
+      // Add 2 favorites so fav random can be enabled
+      await provider.toggleFavoriteReciter(1);
+      await provider.toggleFavoriteReciter(2);
+      expect(provider.canEnableRandomFavReciterMode, isTrue);
+
+      provider.toggleRandomFavReciterMode();
+      expect(provider.isRandomFavReciterMode, isTrue);
+      expect(provider.isRandomReciterMode, isFalse); // Mutual exclusion
+
+      provider.disableRandomModes();
+      expect(provider.isRandomReciterMode, isFalse);
+      expect(provider.isRandomFavReciterMode, isFalse);
+    });
+
+    test('Random favorite reciter cannot be enabled with fewer than 2 favorites/pinned', () async {
+      final provider = PlaylistProvider();
+      expect(provider.canEnableRandomFavReciterMode, isFalse);
+
+      provider.toggleRandomFavReciterMode();
+      expect(provider.isRandomFavReciterMode, isFalse);
+
+      // Add only 1 favorite
+      await provider.toggleFavoriteReciter(1);
+      expect(provider.canEnableRandomFavReciterMode, isFalse);
+      provider.toggleRandomFavReciterMode();
+      expect(provider.isRandomFavReciterMode, isFalse);
+
+      // Add 1 pinned (now 2 distinct: 1 fav, 1 pinned)
+      await provider.togglePinReciter(2);
+      expect(provider.canEnableRandomFavReciterMode, isTrue);
+      provider.toggleRandomFavReciterMode();
+      expect(provider.isRandomFavReciterMode, isTrue);
+    });
   });
 }
 

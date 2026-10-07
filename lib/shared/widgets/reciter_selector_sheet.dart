@@ -601,7 +601,7 @@ class _ReciterSelectorSheetState extends State<ReciterSelectorSheet> {
                     child: _RandomModeChip(
                       label: context.tr('random_reciter'),
                       tooltip: context.tr('random_reciter_desc'),
-                      icon: Icons.casino_rounded,
+                      icon: Icons.shuffle_rounded,
                       isActive: playlist.isRandomReciterMode,
                       isEnabled: true,
                       onTap: () => playlist.toggleRandomReciterMode(),
@@ -752,6 +752,7 @@ class _ReciterSelectorSheetState extends State<ReciterSelectorSheet> {
                                 ],
                               ),
                               onTap: () {
+                                playlist.disableRandomModes();
                                 playlist.selectReciter(reciter.id);
                                 player.selectReciter(reciter);
                                 Navigator.pop(context);

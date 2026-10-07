@@ -541,6 +541,7 @@ class PlayerProvider extends ChangeNotifier {
     if (surah != null && reciter != null) {
       // Update current reciter so UI reflects random pick
       _currentReciter = reciter;
+      _playlistProvider?.selectReciter(reciter.id);
       await loadAndPlay(surah: surah, reciter: reciter, index: index);
     }
   }
@@ -570,6 +571,7 @@ class PlayerProvider extends ChangeNotifier {
     _isDismissed = true;
     _position = Duration.zero;
     _progress = 0.0;
+    _playlistProvider?.clear();
     notifyListeners();
   }
 

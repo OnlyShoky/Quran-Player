@@ -797,8 +797,8 @@ class _ReciterSelectorHeader extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final playlist = context.watch<PlaylistProvider>();
-    final player = context.read<PlayerProvider>();
-    final selectedReciter = playlist.selectedReciter;
+    final player = context.watch<PlayerProvider>();
+    final selectedReciter = player.currentReciter ?? playlist.selectedReciter;
     final pinnedReciters = playlist.pinnedReciters;
 
     if (playlist.isLoadingReciters) {
@@ -860,7 +860,7 @@ class _ReciterSelectorHeader extends StatelessWidget {
                     ),
                     child: Icon(
                       (playlist.isRandomReciterMode || playlist.isRandomFavReciterMode)
-                          ? Icons.casino_rounded
+                          ? Icons.shuffle_rounded
                           : Icons.mic_rounded,
                       color: theme.colorScheme.primary,
                       size: isCompact ? 16 : 18,
@@ -886,17 +886,10 @@ class _ReciterSelectorHeader extends StatelessWidget {
                         ),
                         const SizedBox(height: 1),
                         Text(
-                          playlist.isRandomFavReciterMode
-                              ? context.tr('random_fav_reciter')
-                              : playlist.isRandomReciterMode
-                                  ? context.tr('random_reciter')
-                                  : selectedReciter?.name ?? context.tr('select_reciter'),
+                          selectedReciter?.name ?? context.tr('select_reciter'),
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w600,
                             fontSize: isCompact ? 13 : null,
-                            color: (playlist.isRandomReciterMode || playlist.isRandomFavReciterMode)
-                                ? theme.colorScheme.primary
-                                : null,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
