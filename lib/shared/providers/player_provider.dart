@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
@@ -371,6 +372,24 @@ class PlayerProvider extends ChangeNotifier {
           notifyListeners();
         }
         break;
+      case PlaybackCompletionAction.randomSurah:
+        // Like loopPlaylist but pick a random index from the playlist
+        if (_playlistProvider != null && _playlistProvider!.items.isNotEmpty) {
+          final count = _playlistProvider!.items.length;
+          if (count == 1) {
+            playIndex(0);
+          } else {
+            int nextIndex;
+            do {
+              nextIndex = Random().nextInt(count);
+            } while (nextIndex == _currentIndex);
+            playIndex(nextIndex);
+          }
+        } else {
+          _state = PlaybackState.stopped;
+          notifyListeners();
+        }
+        break;
       case PlaybackCompletionAction.next:
         if (_playlistProvider != null && _playlistProvider!.items.isNotEmpty) {
           if (_currentIndex < _playlistProvider!.items.length - 1) {
@@ -502,9 +521,26 @@ class PlayerProvider extends ChangeNotifier {
 
     final item = _playlistProvider!.items[index];
     final surah = _playlistProvider!.surahById(item.surahId);
-    final reciter = _playlistProvider!.selectedReciter ?? _currentReciter;
+
+    // Determine reciter: respect random reciter modes
+    Reciter? reciter;
+    if (_playlistProvider!.isRandomFavReciterMode) {
+      reciter = _playlistProvider!.pickRandomFavReciter(
+            excludeId: _currentReciter?.id) ??
+          _playlistProvider!.selectedReciter ??
+          _currentReciter;
+    } else if (_playlistProvider!.isRandomReciterMode) {
+      reciter = _playlistProvider!.pickRandomReciter(
+            excludeId: _currentReciter?.id) ??
+          _playlistProvider!.selectedReciter ??
+          _currentReciter;
+    } else {
+      reciter = _playlistProvider!.selectedReciter ?? _currentReciter;
+    }
 
     if (surah != null && reciter != null) {
+      // Update current reciter so UI reflects random pick
+      _currentReciter = reciter;
       await loadAndPlay(surah: surah, reciter: reciter, index: index);
     }
   }

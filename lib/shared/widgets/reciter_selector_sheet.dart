@@ -276,6 +276,110 @@ class _FilterBottomSheet extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
+// Random mode chip button
+// ---------------------------------------------------------------------------
+class _RandomModeChip extends StatelessWidget {
+  final String label;
+  final String tooltip;
+  final IconData icon;
+  final bool isActive;
+  final bool isEnabled;
+  final VoidCallback onTap;
+
+  const _RandomModeChip({
+    required this.label,
+    required this.tooltip,
+    required this.icon,
+    required this.isActive,
+    required this.isEnabled,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final Color bgColor;
+    final Color fgColor;
+    final Color borderColor;
+
+    if (!isEnabled) {
+      bgColor = isDark
+          ? AppColors.surfaceContainerDark.withValues(alpha: 0.5)
+          : AppColors.surfaceContainerLight.withValues(alpha: 0.5);
+      fgColor = isDark
+          ? AppColors.mutedDark.withValues(alpha: 0.4)
+          : AppColors.mutedLight.withValues(alpha: 0.4);
+      borderColor = Colors.transparent;
+    } else if (isActive) {
+      bgColor = theme.colorScheme.primary.withValues(alpha: 0.12);
+      fgColor = theme.colorScheme.primary;
+      borderColor = theme.colorScheme.primary;
+    } else {
+      bgColor = isDark
+          ? AppColors.surfaceContainerDark
+          : AppColors.surfaceContainerLight;
+      fgColor = isDark ? AppColors.mutedDark : AppColors.mutedLight;
+      borderColor = Colors.transparent;
+    }
+
+    return Tooltip(
+      message: tooltip,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        child: Material(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(10),
+          child: InkWell(
+            onTap: isEnabled ? onTap : null,
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              height: 44,
+              decoration: BoxDecoration(
+                border: Border.all(color: borderColor, width: 1.5),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, size: 16, color: fgColor),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      label,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: fgColor,
+                        fontWeight:
+                            isActive ? FontWeight.w700 : FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ),
+                  if (isActive) ...[
+                    const SizedBox(width: 4),
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: fgColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Main reciter selector sheet
 // ---------------------------------------------------------------------------
 class ReciterSelectorSheet extends StatefulWidget {
@@ -485,6 +589,40 @@ class _ReciterSelectorSheetState extends State<ReciterSelectorSheet> {
                 ),
               ),
             ],
+
+            const SizedBox(height: 8),
+
+            // Random reciter mode buttons
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _RandomModeChip(
+                      label: context.tr('random_reciter'),
+                      tooltip: context.tr('random_reciter_desc'),
+                      icon: Icons.casino_rounded,
+                      isActive: playlist.isRandomReciterMode,
+                      isEnabled: true,
+                      onTap: () => playlist.toggleRandomReciterMode(),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _RandomModeChip(
+                      label: context.tr('random_fav_reciter'),
+                      tooltip: playlist.canEnableRandomFavReciterMode
+                          ? context.tr('random_fav_reciter_desc')
+                          : context.tr('random_fav_reciter_disabled'),
+                      icon: Icons.favorite_rounded,
+                      isActive: playlist.isRandomFavReciterMode,
+                      isEnabled: playlist.canEnableRandomFavReciterMode,
+                      onTap: () => playlist.toggleRandomFavReciterMode(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
             const SizedBox(height: 8),
 

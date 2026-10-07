@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/models/playlist_item.dart';
@@ -22,6 +23,10 @@ class PlaylistProvider extends ChangeNotifier {
   Set<int> _favoriteReciterIds = {};
   List<int> _pinnedReciterIds = [];
 
+  // Random reciter modes
+  bool _isRandomReciterMode = false;
+  bool _isRandomFavReciterMode = false;
+
   final List<PlaylistItem> _items = [];
   Set<AudioApiSource>? _lastKnownSources;
 
@@ -32,6 +37,18 @@ class PlaylistProvider extends ChangeNotifier {
 
   Set<int> get favoriteReciterIds => Set.unmodifiable(_favoriteReciterIds);
   List<int> get pinnedReciterIds => List.unmodifiable(_pinnedReciterIds);
+
+  bool get isRandomReciterMode => _isRandomReciterMode;
+  bool get isRandomFavReciterMode => _isRandomFavReciterMode;
+
+  /// Returns true if there are at least 2 distinct reciters in favorites+pinned.
+  bool get canEnableRandomFavReciterMode {
+    final favOrPinned = <int>{
+      ..._favoriteReciterIds,
+      ..._pinnedReciterIds,
+    };
+    return favOrPinned.length >= 2;
+  }
 
   List<Reciter> get pinnedReciters {
     final list = <Reciter>[];
@@ -46,6 +63,45 @@ class PlaylistProvider extends ChangeNotifier {
 
   bool isFavorite(int reciterId) => _favoriteReciterIds.contains(reciterId);
   bool isPinned(int reciterId) => _pinnedReciterIds.contains(reciterId);
+
+  /// Toggle random-all-reciters mode. Disables fav-random when enabling this.
+  void toggleRandomReciterMode() {
+    _isRandomReciterMode = !_isRandomReciterMode;
+    if (_isRandomReciterMode) _isRandomFavReciterMode = false;
+    notifyListeners();
+  }
+
+  /// Toggle random-favorites-reciters mode. Disables all-random when enabling this.
+  void toggleRandomFavReciterMode() {
+    if (!canEnableRandomFavReciterMode && !_isRandomFavReciterMode) return;
+    _isRandomFavReciterMode = !_isRandomFavReciterMode;
+    if (_isRandomFavReciterMode) _isRandomReciterMode = false;
+    notifyListeners();
+  }
+
+  /// Pick a random reciter from all available reciters (excluding current if possible).
+  Reciter? pickRandomReciter({int? excludeId}) {
+    if (_reciters.isEmpty) return null;
+    final pool = _reciters.length > 1
+        ? _reciters.where((r) => r.id != excludeId).toList()
+        : _reciters;
+    return pool[Random().nextInt(pool.length)];
+  }
+
+  /// Pick a random reciter from favorites+pinned (excluding current if possible).
+  Reciter? pickRandomFavReciter({int? excludeId}) {
+    final favOrPinnedIds = <int>{
+      ..._favoriteReciterIds,
+      ..._pinnedReciterIds,
+    };
+    final pool = _reciters
+        .where((r) => favOrPinnedIds.contains(r.id))
+        .toList();
+    if (pool.isEmpty) return null;
+    final filtered =
+        pool.length > 1 ? pool.where((r) => r.id != excludeId).toList() : pool;
+    return filtered[Random().nextInt(filtered.length)];
+  }
 
   Reciter? get selectedReciter {
     if (_selectedReciterId == null || _reciters.isEmpty) return null;
@@ -143,17 +199,11 @@ class PlaylistProvider extends ChangeNotifier {
 
     if (_pinnedReciterIds.contains(reciterId)) {
       _pinnedReciterIds.remove(reciterId);
-      // Unpinning does not remove from favorites, only removes the pin
     } else {
       if (_pinnedReciterIds.length >= 3) {
         return false; // Reached limit of 3
       }
       _pinnedReciterIds.add(reciterId);
-      // Pinning automatically adds the reciter to favorites
-      if (!_favoriteReciterIds.contains(reciterId)) {
-        _favoriteReciterIds.add(reciterId);
-        await _saveFavoritePreferences();
-      }
     }
     notifyListeners();
     await _savePinnedPreferences();

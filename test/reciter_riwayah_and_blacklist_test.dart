@@ -115,28 +115,25 @@ void main() {
       SharedPreferences.setMockInitialValues({});
     });
 
-    test('Pinning a reciter automatically adds them to favorites', () async {
+    test('Pinning a reciter only pins and does not affect favorites', () async {
       final provider = PlaylistProvider();
       await Future.delayed(const Duration(milliseconds: 20));
 
       final success = await provider.togglePinReciter(101);
       expect(success, isTrue);
       expect(provider.isPinned(101), isTrue);
-      expect(provider.isFavorite(101), isTrue);
-    });
+      expect(provider.isFavorite(101), isFalse); // Pinning only pins!
 
-    test('Unpinning a reciter keeps them in favorites but removes the pin', () async {
-      final provider = PlaylistProvider();
-      await Future.delayed(const Duration(milliseconds: 20));
-
-      await provider.togglePinReciter(101);
+      // Favoriting works independently
+      await provider.toggleFavoriteReciter(101);
       expect(provider.isPinned(101), isTrue);
       expect(provider.isFavorite(101), isTrue);
 
+      // Unpinning leaves favorite intact
       final unpinSuccess = await provider.togglePinReciter(101);
       expect(unpinSuccess, isTrue);
       expect(provider.isPinned(101), isFalse);
-      expect(provider.isFavorite(101), isTrue); // Retains favorite
+      expect(provider.isFavorite(101), isTrue);
     });
 
     test('Enforces maximum of 3 pinned reciters', () async {
@@ -172,7 +169,7 @@ void main() {
       // Now user can pin new valid reciters without hitting max limit
       expect(await provider.togglePinReciter(101), isTrue);
       expect(provider.isPinned(101), isTrue);
-      expect(provider.isFavorite(101), isTrue);
+      expect(provider.isFavorite(101), isFalse);
     });
   });
 }

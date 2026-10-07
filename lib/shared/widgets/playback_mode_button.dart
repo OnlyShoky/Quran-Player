@@ -15,7 +15,7 @@ class PlaybackModeButton extends StatelessWidget {
     this.showBackgroundOnActive = false,
   });
 
-  /// Cycle: next -> loopPlaylist -> repeat -> next
+  /// Cycle: next -> loopPlaylist -> repeat -> randomSurah -> next
   void _cycleMode(BuildContext context) {
     final settings = context.read<SettingsProvider>();
     final current = settings.playbackCompletion;
@@ -23,7 +23,8 @@ class PlaybackModeButton extends StatelessWidget {
     final nextAction = switch (current) {
       PlaybackCompletionAction.next => PlaybackCompletionAction.loopPlaylist,
       PlaybackCompletionAction.loopPlaylist => PlaybackCompletionAction.repeat,
-      PlaybackCompletionAction.repeat => PlaybackCompletionAction.next,
+      PlaybackCompletionAction.repeat => PlaybackCompletionAction.randomSurah,
+      PlaybackCompletionAction.randomSurah => PlaybackCompletionAction.next,
       _ => PlaybackCompletionAction.next,
     };
 
@@ -32,6 +33,7 @@ class PlaybackModeButton extends StatelessWidget {
     final msg = switch (nextAction) {
       PlaybackCompletionAction.loopPlaylist => context.tr('playback_loop'),
       PlaybackCompletionAction.repeat => context.tr('playback_repeat'),
+      PlaybackCompletionAction.randomSurah => context.tr('playback_random_surah'),
       _ => context.tr('playback_next'),
     };
 
@@ -118,6 +120,18 @@ class PlaybackModeButton extends StatelessWidget {
                     Navigator.pop(ctx);
                   },
                 ),
+                _buildModalTile(
+                  context,
+                  title: context.tr('playback_random_surah'),
+                  subtitle: context.tr('playback_random_surah_desc'),
+                  icon: Icons.shuffle_rounded,
+                  action: PlaybackCompletionAction.randomSurah,
+                  current: settings.playbackCompletion,
+                  onSelect: (a) {
+                    settings.setPlaybackCompletion(a);
+                    Navigator.pop(ctx);
+                  },
+                ),
               ],
             ),
           ),
@@ -190,6 +204,11 @@ class PlaybackModeButton extends StatelessWidget {
       PlaybackCompletionAction.loopPlaylist => (
           Icons.loop_rounded,
           'playback_loop',
+          true,
+        ),
+      PlaybackCompletionAction.randomSurah => (
+          Icons.shuffle_rounded,
+          'playback_random_surah',
           true,
         ),
       _ => (

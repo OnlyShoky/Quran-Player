@@ -10,6 +10,9 @@ import 'package:sukun/shared/providers/player_provider.dart';
 import 'package:sukun/shared/providers/playlist_provider.dart';
 import 'package:sukun/shared/providers/settings_provider.dart';
 import 'package:sukun/shared/providers/view_mode_provider.dart';
+import 'package:sukun/core/models/reciter.dart';
+import 'package:sukun/core/models/audio_api_source.dart';
+import 'package:sukun/core/services/api_service.dart';
 import 'package:sukun/shared/widgets/surah_tile.dart';
 import 'package:sukun/features/surah_list/surah_list_screen.dart';
 
@@ -144,8 +147,14 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
 
-      final playlist = PlaylistProvider();
-      await Future.delayed(const Duration(milliseconds: 20));
+      final mockReciters = [
+        const Reciter(id: 1, name: 'Abdul Aziz Al-Ahmad', style: 'Murattal', serverUrl: 'https://test/1/'),
+        const Reciter(id: 2, name: 'Abdul Aziz Az-Zahrani', style: 'Murattal', serverUrl: 'https://test/2/'),
+        const Reciter(id: 3, name: 'Abdul Azeez Al-Hakami', style: 'Murattal', serverUrl: 'https://test/3/'),
+      ];
+
+      final playlist = PlaylistProvider(apiService: _FakeApiService(mockReciters));
+      await playlist.refreshReciters();
       await playlist.togglePinReciter(1);
       await playlist.togglePinReciter(2);
       await playlist.togglePinReciter(3);
@@ -166,11 +175,12 @@ void main() {
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
-            home: SurahListScreen(),
+            home: Scaffold(body: SurahListScreen()),
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(tester.takeException(), isNull);
       expect(find.text('RECITADOR'), findsOneWidget);
@@ -722,4 +732,14 @@ void main() {
       },
     );
   });
+}
+
+class _FakeApiService extends ApiService {
+  final List<Reciter> mockReciters;
+  _FakeApiService(this.mockReciters);
+
+  @override
+  Future<List<Reciter>> fetchReciters({Set<AudioApiSource>? enabledSources}) async {
+    return mockReciters;
+  }
 }

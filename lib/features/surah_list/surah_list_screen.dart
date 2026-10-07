@@ -859,7 +859,9 @@ class _ReciterSelectorHeader extends StatelessWidget {
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      Icons.mic_rounded,
+                      (playlist.isRandomReciterMode || playlist.isRandomFavReciterMode)
+                          ? Icons.casino_rounded
+                          : Icons.mic_rounded,
                       color: theme.colorScheme.primary,
                       size: isCompact ? 16 : 18,
                     ),
@@ -884,10 +886,17 @@ class _ReciterSelectorHeader extends StatelessWidget {
                         ),
                         const SizedBox(height: 1),
                         Text(
-                          selectedReciter?.name ?? context.tr('select_reciter'),
+                          playlist.isRandomFavReciterMode
+                              ? context.tr('random_fav_reciter')
+                              : playlist.isRandomReciterMode
+                                  ? context.tr('random_reciter')
+                                  : selectedReciter?.name ?? context.tr('select_reciter'),
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w600,
                             fontSize: isCompact ? 13 : null,
+                            color: (playlist.isRandomReciterMode || playlist.isRandomFavReciterMode)
+                                ? theme.colorScheme.primary
+                                : null,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,

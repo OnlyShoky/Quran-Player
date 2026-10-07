@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/models/audio_api_source.dart';
 
-enum PlaybackCompletionAction { next, repeat, loopPlaylist, stop }
+enum PlaybackCompletionAction { next, repeat, loopPlaylist, randomSurah, stop }
 
 class SettingsProvider extends ChangeNotifier {
   static const _themeKey = 'app_theme_mode';
@@ -60,6 +60,8 @@ class SettingsProvider extends ChangeNotifier {
       _playbackCompletion = PlaybackCompletionAction.repeat;
     } else if (pbStr == 'loopPlaylist') {
       _playbackCompletion = PlaybackCompletionAction.loopPlaylist;
+    } else if (pbStr == 'randomSurah') {
+      _playbackCompletion = PlaybackCompletionAction.randomSurah;
     } else if (pbStr == 'stop') {
       _playbackCompletion = PlaybackCompletionAction.stop;
     } else {
