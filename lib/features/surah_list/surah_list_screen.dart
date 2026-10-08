@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/data/mock_data.dart';
 import '../../core/data/surah_filter_data.dart';
@@ -25,7 +26,13 @@ class SurahListScreen extends StatefulWidget {
   State<SurahListScreen> createState() => _SurahListScreenState();
 }
 
-class _SurahListScreenState extends State<SurahListScreen> {
+class _SurahListScreenState extends State<SurahListScreen>
+    with WidgetsBindingObserver {
+  static const String _prefFilterJuz = 'surah_filter_juz';
+  static const String _prefFilterHizb = 'surah_filter_hizb';
+  static const String _prefFilterFrom = 'surah_filter_from';
+  static const String _prefFilterTo = 'surah_filter_to';
+
   final _searchController = TextEditingController();
   final _juzController = TextEditingController();
   final _hizbController = TextEditingController();
@@ -45,6 +52,39 @@ class _SurahListScreenState extends State<SurahListScreen> {
       _fromController.text.trim().isNotEmpty ||
       _toController.text.trim().isNotEmpty;
 
+  Future<void> _loadSavedFilters() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedJuz = prefs.getString(_prefFilterJuz) ?? '';
+      final savedHizb = prefs.getString(_prefFilterHizb) ?? '';
+      final savedFrom = prefs.getString(_prefFilterFrom) ?? '';
+      final savedTo = prefs.getString(_prefFilterTo) ?? '';
+      if (savedJuz.isNotEmpty ||
+          savedHizb.isNotEmpty ||
+          savedFrom.isNotEmpty ||
+          savedTo.isNotEmpty) {
+        if (mounted) {
+          setState(() {
+            _juzController.text = savedJuz;
+            _hizbController.text = savedHizb;
+            _fromController.text = savedFrom;
+            _toController.text = savedTo;
+          });
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _saveFilters() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_prefFilterJuz, _juzController.text.trim());
+      await prefs.setString(_prefFilterHizb, _hizbController.text.trim());
+      await prefs.setString(_prefFilterFrom, _fromController.text.trim());
+      await prefs.setString(_prefFilterTo, _toController.text.trim());
+    } catch (_) {}
+  }
+
   void _clearFilters() {
     setState(() {
       _juzController.clear();
@@ -52,6 +92,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
       _fromController.clear();
       _toController.clear();
     });
+    _saveFilters();
   }
 
   void _onJuzChanged(String val) {
@@ -60,6 +101,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
       if (_fromController.text.isNotEmpty) _fromController.clear();
       if (_toController.text.isNotEmpty) _toController.clear();
     }
+    _saveFilters();
   }
 
   void _onHizbChanged(String val) {
@@ -68,6 +110,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
       if (_fromController.text.isNotEmpty) _fromController.clear();
       if (_toController.text.isNotEmpty) _toController.clear();
     }
+    _saveFilters();
   }
 
   void _onFromChanged(String val) {
@@ -75,6 +118,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
       if (_juzController.text.isNotEmpty) _juzController.clear();
       if (_hizbController.text.isNotEmpty) _hizbController.clear();
     }
+    _saveFilters();
   }
 
   void _onToChanged(String val) {
@@ -82,18 +126,35 @@ class _SurahListScreenState extends State<SurahListScreen> {
       if (_juzController.text.isNotEmpty) _juzController.clear();
       if (_hizbController.text.isNotEmpty) _hizbController.clear();
     }
+    _saveFilters();
   }
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _loadSavedFilters();
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => _checkAndShowTutorial(),
     );
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.hidden) {
+      if (_showFilters && mounted) {
+        setState(() {
+          _showFilters = false;
+        });
+      }
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _removeTutorialOverlay();
     _searchController.dispose();
     _juzController.dispose();
@@ -459,45 +520,75 @@ class _SurahListScreenState extends State<SurahListScreen> {
 
                   const SizedBox(width: 5),
 
-                  // Filter toggle button
-                  Container(
-                    height: 46,
-                    width: 46,
-                    decoration: BoxDecoration(
-                      color: (_showFilters || _hasActiveFilters)
-                          ? theme.colorScheme.primary.withValues(alpha: 0.15)
-                          : (isDark
-                                ? AppColors.surfaceContainerDark
-                                : AppColors.surfaceContainerLight),
-                      borderRadius: BorderRadius.circular(12),
-                      border: (_showFilters || _hasActiveFilters)
-                          ? Border.all(
-                              color: theme.colorScheme.primary,
-                              width: 1.5,
-                            )
-                          : null,
-                    ),
-                    child: IconButton(
-                      padding: EdgeInsets.zero,
-                      icon: Badge(
-                        isLabelVisible: _hasActiveFilters,
-                        smallSize: 8,
-                        backgroundColor: theme.colorScheme.primary,
-                        child: Icon(
-                          _showFilters
-                              ? Icons.filter_list_rounded
-                              : Icons.tune_rounded,
-                          size: 20,
+                  // Filter toggle & clear button (matching reciter filter button design)
+                  GestureDetector(
+                    onTap: () => setState(() => _showFilters = !_showFilters),
+                    child: Tooltip(
+                      message: context.tr('filters'),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        height: 46,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: _hasActiveFilters ? 10 : 13,
+                        ),
+                        decoration: BoxDecoration(
                           color: (_showFilters || _hasActiveFilters)
-                              ? theme.colorScheme.primary
+                              ? theme.colorScheme.primary.withValues(alpha: 0.15)
                               : (isDark
-                                    ? AppColors.mutedDark
-                                    : AppColors.mutedLight),
+                                    ? AppColors.surfaceContainerDark
+                                    : AppColors.surfaceContainerLight),
+                          borderRadius: BorderRadius.circular(12),
+                          border: (_showFilters || _hasActiveFilters)
+                              ? Border.all(
+                                  color: theme.colorScheme.primary,
+                                  width: 1.5,
+                                )
+                              : null,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _hasActiveFilters
+                                  ? Icons.filter_alt_rounded
+                                  : (_showFilters
+                                        ? Icons.filter_list_rounded
+                                        : Icons.tune_rounded),
+                              size: 20,
+                              color: (_showFilters || _hasActiveFilters)
+                                  ? theme.colorScheme.primary
+                                  : (isDark
+                                        ? AppColors.mutedDark
+                                        : AppColors.mutedLight),
+                            ),
+                            if (_hasActiveFilters) ...[
+                              const SizedBox(width: 4),
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.primary,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: _clearFilters,
+                                child: Tooltip(
+                                  message: context.tr('filter_clear'),
+                                  child: Icon(
+                                    Icons.close_rounded,
+                                    size: 16,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       ),
-                      tooltip: context.tr('filters'),
-                      onPressed: () =>
-                          setState(() => _showFilters = !_showFilters),
                     ),
                   ),
                 ],

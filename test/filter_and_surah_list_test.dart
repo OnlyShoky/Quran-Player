@@ -732,6 +732,95 @@ void main() {
         ); // Al-Baqarah (NOT in Juz 30)
       },
     );
+
+    testWidgets('Tapping close icon on filter button clears active filters', (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'has_seen_view_mode_tutorial': true,
+      });
+      tester.view.physicalSize = const Size(360, 780);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(createTestWidget(const SurahListScreen()));
+      await tester.pumpAndSettle();
+
+      // Open filters and enter Juz 30
+      await tester.tap(find.byTooltip('Filters'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextField, 'Juz'), '30');
+      await tester.pumpAndSettle();
+
+      expect(find.text('37 results'), findsOneWidget);
+      // Filter button should now show filter_alt_rounded and close icon
+      expect(find.byIcon(Icons.filter_alt_rounded), findsOneWidget);
+      expect(find.byTooltip('Clear Filters'), findsOneWidget);
+
+      // Tap the small cross icon on the filter button
+      await tester.tap(find.byTooltip('Clear Filters'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('114 chapters'), findsOneWidget);
+      expect(find.byIcon(Icons.filter_alt_rounded), findsNothing);
+    });
+
+    testWidgets('Surah filters persist across screen recreation and bar starts collapsed', (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'has_seen_view_mode_tutorial': true,
+        'surah_filter_juz': '30',
+      });
+      tester.view.physicalSize = const Size(360, 780);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(createTestWidget(const SurahListScreen()));
+      await tester.pumpAndSettle();
+
+      // Filter bar should start collapsed (TextField 'Juz' not rendered)
+      expect(find.widgetWithText(TextField, 'Juz'), findsNothing);
+      // But 37 results should be shown because Juz 30 filter is active!
+      expect(find.text('37 results'), findsOneWidget);
+      expect(find.byIcon(Icons.filter_alt_rounded), findsOneWidget);
+
+      // Expanding the filter bar shows '30' already in the Juz input
+      await tester.tap(find.byTooltip('Filters'));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(TextField, '30'), findsOneWidget);
+    });
+
+    testWidgets('Switching apps collapses the filter bar while keeping filters active', (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'has_seen_view_mode_tutorial': true,
+      });
+      tester.view.physicalSize = const Size(360, 780);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(createTestWidget(const SurahListScreen()));
+      await tester.pumpAndSettle();
+
+      // Open filter bar and enter Hizb 60
+      await tester.tap(find.byTooltip('Filters'));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(TextField, 'Hzb'), findsOneWidget);
+
+      await tester.enterText(find.widgetWithText(TextField, 'Hzb'), '60');
+      await tester.pumpAndSettle();
+      expect(find.text('28 results'), findsOneWidget);
+
+      // Simulate switching apps and returning
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+
+      // Filter bar should be collapsed (hidden)
+      expect(find.widgetWithText(TextField, 'Hzb'), findsNothing);
+      // But the filter remains active (28 results)
+      expect(find.text('28 results'), findsOneWidget);
+    });
   });
 }
 
