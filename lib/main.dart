@@ -8,11 +8,16 @@ import 'core/analytics/analytics_service.dart';
 import 'core/services/quran_audio_handler.dart';
 
 Future<void> main() async {
+  // DevicePreview.enable() initializes Flutter bindings itself in debug mode,
+  // so we must NOT call ensureInitialized() before it to avoid a double-init
+  // assertion. In non-debug builds we initialize the binding ourselves.
   if (kDebugMode) {
     DevicePreview.enable(
       padding: const EdgeInsets.all(24),
       backgroundDecoration: const BoxDecoration(color: Colors.transparent),
     );
+  } else {
+    WidgetsFlutterBinding.ensureInitialized();
   }
   await MediaArtworkService.prepare();
   await QuranAudioHandler.initialize(
