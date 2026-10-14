@@ -30,6 +30,8 @@ class PlayerProvider extends ChangeNotifier {
   String? _pendingAudioUrl;
   AudioApiSource? _currentAudioSource;
   String? _errorMessage;
+  String? _fallbackMessage; // Transient info shown when fallback kicks in
+  final Set<int> _failedReciterIds = {}; // reciters that errored on the current surah
 
   StreamSubscription? _playerStateSub;
   StreamSubscription? _positionSub;
@@ -78,10 +80,38 @@ class PlayerProvider extends ChangeNotifier {
       _currentReciter ?? _playlistProvider?.selectedReciter;
 
   String? get errorMessage => _errorMessage;
+  /// Non-error informational message when a fallback reciter was used.
+  String? get fallbackMessage => _fallbackMessage;
+
+  /// Called by UI to dismiss the fallback banner.
+  void clearFallbackMessage() {
+    if (_fallbackMessage != null) {
+      _fallbackMessage = null;
+      notifyListeners();
+    }
+  }
 
   PlayerProvider() {
     final audioHandler = QuranAudioHandler.instance;
     audioHandler.onCurrentMediaItemChanged = _syncCurrentMediaItem;
+    audioHandler.onSkipToNext = () async => skipNext();
+    audioHandler.onSkipToPrevious = () async => skipPrevious();
+    audioHandler.hasNextCheck = () {
+      final playlist = _playlistProvider;
+      if (playlist == null || playlist.items.isEmpty) return false;
+      final mode =
+          _settingsProvider?.playbackCompletion ?? PlaybackCompletionAction.next;
+      if (mode == PlaybackCompletionAction.randomSurah ||
+          mode == PlaybackCompletionAction.loopPlaylist) {
+        return playlist.items.length > 1;
+      }
+      return _currentIndex < playlist.items.length - 1;
+    };
+    audioHandler.hasPreviousCheck = () {
+      final playlist = _playlistProvider;
+      if (playlist == null || playlist.items.isEmpty) return false;
+      return _currentIndex > 0 || _position.inSeconds > 3;
+    };
     _audioOutputDeviceListener = AudioOutputDeviceListener(_handleAudioOutputDeviceChanged);
     _initAudioSession();
     _initAudioListeners();
@@ -303,39 +333,6 @@ class PlayerProvider extends ChangeNotifier {
     );
   }
 
-  List<AudioSource> _sourcesForCandidate({
-    required String currentUrl,
-    required Surah currentSurah,
-    required Reciter reciter,
-  }) {
-    final playlist = _playlistProvider;
-    if (playlist == null || playlist.items.isEmpty) {
-      return [
-        _audioSourceFor(
-          url: currentUrl,
-          surah: currentSurah,
-          reciter: reciter,
-        ),
-      ];
-    }
-
-    final sources = <AudioSource>[];
-    for (final item in playlist.items) {
-      final surah = playlist.surahById(item.surahId);
-      if (surah == null) continue;
-
-      final candidates = reciter.getAllCandidateAudioSources(surah.id);
-      final url = surah.id == currentSurah.id
-          ? currentUrl
-          : candidates.isNotEmpty
-              ? candidates.first.url
-              : reciter.getAudioUrl(surah.id);
-      if (url.isNotEmpty) {
-        sources.add(_audioSourceFor(url: url, surah: surah, reciter: reciter));
-      }
-    }
-    return sources;
-  }
 
   void _onTrackCompleted() {
     final completionAction =
@@ -427,7 +424,8 @@ class PlayerProvider extends ChangeNotifier {
     return reciter.getAudioUrl(surah.id);
   }
 
-  Future<void> loadAndPlay({
+  /// Returns true if audio was loaded and playback started, false on total failure.
+  Future<bool> loadAndPlay({
     required Surah surah,
     required Reciter reciter,
     required int index,
@@ -472,22 +470,14 @@ class PlayerProvider extends ChangeNotifier {
       notifyListeners();
 
       try {
-        final sources = _sourcesForCandidate(
-          currentUrl: candidate.url,
-          currentSurah: surah,
+        final source = _audioSourceFor(
+          url: candidate.url,
+          surah: surah,
           reciter: reciter,
         );
-        final initialIndex = sources.indexWhere(
-          (source) => source is UriAudioSource &&
-              source.uri.toString() == candidate.url,
-        );
-        if (initialIndex < 0) {
-          throw StateError('Audio source was not added to the playback queue');
-        }
 
-        await _audioPlayer.setAudioSources(
-          sources,
-          initialIndex: initialIndex,
+        await _audioPlayer.setAudioSource(
+          source,
           preload: true,
         );
         await _audioPlayer.play();
@@ -497,6 +487,7 @@ class PlayerProvider extends ChangeNotifier {
         _currentAudioUrl = candidate.url;
         _currentAudioSource = candidate.apiSource;
         succeeded = true;
+        QuranAudioHandler.instance.broadcastPlaybackState();
         notifyListeners();
         break;
       } catch (e) {
@@ -511,7 +502,9 @@ class PlayerProvider extends ChangeNotifier {
       _errorMessage = 'Failed to load audio: $lastError';
       _state = PlaybackState.stopped;
       notifyListeners();
+      return false;
     }
+    return true;
   }
 
   Future<void> playIndex(int index) async {
@@ -521,28 +514,104 @@ class PlayerProvider extends ChangeNotifier {
 
     final item = _playlistProvider!.items[index];
     final surah = _playlistProvider!.surahById(item.surahId);
+    if (surah == null) return;
 
-    // Determine reciter: respect random reciter modes
+    _currentIndex = index;
+    _currentSurah = surah;
+    notifyListeners();
+
+    // Reset per-surah failed reciter tracking when we move to a new surah.
+    _failedReciterIds.clear();
+    _fallbackMessage = null;
+
+    await _playIndexWithFallback(index: index, surah: surah);
+  }
+
+  /// Internal method that picks a reciter, attempts playback, and retries
+  /// with alternate reciters when in random mode or falls back gracefully
+  /// in fixed-reciter mode. Avoids infinite loops via [_failedReciterIds].
+  Future<void> _playIndexWithFallback({
+    required int index,
+    required Surah surah,
+    int retryCount = 0,
+  }) async {
+    // Safety cap: never retry more than 10 times total per surah
+    const maxRetries = 10;
+
+    final playlist = _playlistProvider!;
+    final isRandomFav = playlist.isRandomFavReciterMode;
+    final isRandom = playlist.isRandomReciterMode;
+
+    // Pick the reciter for this attempt
     Reciter? reciter;
-    if (_playlistProvider!.isRandomFavReciterMode) {
-      reciter = _playlistProvider!.pickRandomFavReciter(
-            excludeId: _currentReciter?.id) ??
-          _playlistProvider!.selectedReciter ??
-          _currentReciter;
-    } else if (_playlistProvider!.isRandomReciterMode) {
-      reciter = _playlistProvider!.pickRandomReciter(
-            excludeId: _currentReciter?.id) ??
-          _playlistProvider!.selectedReciter ??
-          _currentReciter;
+    if (isRandomFav) {
+      reciter = playlist.pickRandomFavReciter(
+        excludeId: _currentReciter?.id,
+        excludeIds: _failedReciterIds,
+        surahId: surah.id,
+      ) ?? playlist.selectedReciter ?? _currentReciter;
+    } else if (isRandom) {
+      reciter = playlist.pickRandomReciter(
+        excludeId: _currentReciter?.id,
+        excludeIds: _failedReciterIds,
+        surahId: surah.id,
+      ) ?? playlist.selectedReciter ?? _currentReciter;
     } else {
-      reciter = _playlistProvider!.selectedReciter ?? _currentReciter;
+      reciter = playlist.selectedReciter ?? _currentReciter;
     }
 
-    if (surah != null && reciter != null) {
-      // Update current reciter so UI reflects random pick
-      _currentReciter = reciter;
-      _playlistProvider?.selectReciter(reciter.id);
-      await loadAndPlay(surah: surah, reciter: reciter, index: index);
+    if (reciter == null) {
+      _state = PlaybackState.stopped;
+      notifyListeners();
+      return;
+    }
+
+    // Update UI to show the chosen reciter immediately
+    _currentReciter = reciter;
+    playlist.selectReciter(reciter.id);
+
+    final succeeded = await loadAndPlay(surah: surah, reciter: reciter, index: index);
+
+    if (!succeeded) {
+      // Mark this reciter as failed for the current surah
+      _failedReciterIds.add(reciter.id);
+      _errorMessage = null; // Clear the stopped-state error; we'll handle it
+
+      if ((isRandom || isRandomFav) && retryCount < maxRetries) {
+        // In random modes: silently pick a different reciter and retry
+        debugPrint('[Fallback] Reciter ${reciter.name} failed surah ${surah.id}. Retrying (attempt ${retryCount + 1})…');
+        _fallbackMessage = 'audio_unavailable_retrying:${reciter.name}';
+        notifyListeners();
+        await _playIndexWithFallback(
+          index: index,
+          surah: surah,
+          retryCount: retryCount + 1,
+        );
+      } else if (!isRandom && !isRandomFav) {
+        // Fixed reciter mode: skip to the next surah automatically so
+        // playback doesn't get stuck. Show a transient message.
+        _fallbackMessage = 'audio_unavailable_skip:${reciter.name}';
+        _state = PlaybackState.stopped;
+        notifyListeners();
+        // Auto-advance after a short delay so the user sees what happened
+        await Future<void>.delayed(const Duration(milliseconds: 800));
+        if (!_isDismissed) {
+          _onTrackCompleted();
+        }
+      } else {
+        // Exhausted all retries in random mode — stop gracefully.
+        debugPrint('[Fallback] Exhausted all reciters for surah ${surah.id}. Stopping.');
+        _fallbackMessage = null;
+        _state = PlaybackState.stopped;
+        _errorMessage = 'Audio unavailable for ${surah.nameEn} with any reciter';
+        notifyListeners();
+      }
+    } else {
+      // Clear any stale fallback message on success
+      if (_fallbackMessage != null) {
+        _fallbackMessage = null;
+        notifyListeners();
+      }
     }
   }
 
@@ -594,22 +663,78 @@ class PlayerProvider extends ChangeNotifier {
   }
 
   void skipNext() {
-    if (_playlistProvider != null && _currentIndex < _playlistProvider!.items.length - 1) {
-      playIndex(_currentIndex + 1);
+    final playlist = _playlistProvider;
+    if (playlist == null || playlist.items.isEmpty) return;
+
+    final completionAction =
+        _settingsProvider?.playbackCompletion ?? PlaybackCompletionAction.next;
+
+    if (completionAction == PlaybackCompletionAction.randomSurah) {
+      final count = playlist.items.length;
+      if (count <= 1) {
+        playIndex(0);
+      } else {
+        int nextIndex;
+        do {
+          nextIndex = Random().nextInt(count);
+        } while (nextIndex == _currentIndex);
+        playIndex(nextIndex);
+      }
+    } else if (completionAction == PlaybackCompletionAction.loopPlaylist) {
+      if (_currentIndex < playlist.items.length - 1) {
+        playIndex(_currentIndex + 1);
+      } else {
+        playIndex(0);
+      }
+    } else {
+      // next, repeat, or stop: clicking "next" explicitly moves to the next surah
+      if (_currentIndex < playlist.items.length - 1) {
+        playIndex(_currentIndex + 1);
+      } else if (completionAction == PlaybackCompletionAction.repeat) {
+        playIndex(0);
+      }
     }
   }
 
   void skipPrevious() {
-    if (_position.inSeconds > 5) {
+    final playlist = _playlistProvider;
+    if (playlist == null || playlist.items.isEmpty) return;
+
+    if (_position.inSeconds > 3) {
       _audioPlayer.seek(Duration.zero);
+      return;
+    }
+
+    final completionAction =
+        _settingsProvider?.playbackCompletion ?? PlaybackCompletionAction.next;
+
+    if (completionAction == PlaybackCompletionAction.randomSurah) {
+      final count = playlist.items.length;
+      if (count <= 1) {
+        _audioPlayer.seek(Duration.zero);
+      } else {
+        int prevIndex;
+        do {
+          prevIndex = Random().nextInt(count);
+        } while (prevIndex == _currentIndex);
+        playIndex(prevIndex);
+      }
     } else if (_currentIndex > 0) {
       playIndex(_currentIndex - 1);
+    } else if (completionAction == PlaybackCompletionAction.loopPlaylist) {
+      playIndex(playlist.items.length - 1);
+    } else {
+      _audioPlayer.seek(Duration.zero);
     }
   }
 
   @override
   void dispose() {
     QuranAudioHandler.instance.onCurrentMediaItemChanged = null;
+    QuranAudioHandler.instance.onSkipToNext = null;
+    QuranAudioHandler.instance.onSkipToPrevious = null;
+    QuranAudioHandler.instance.hasNextCheck = null;
+    QuranAudioHandler.instance.hasPreviousCheck = null;
     _audioOutputDeviceListener.dispose();
     _becomingNoisySub?.cancel();
     _playerStateSub?.cancel();

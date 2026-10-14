@@ -62,11 +62,19 @@ enum AudioApiSource {
 class ReciterAudioSource {
   final AudioApiSource apiSource;
   final String baseUrlOrPattern; // Server url, relative path, or identifier
+  final Set<int>? availableSurahs; // null means all 1..114 or unknown
 
   const ReciterAudioSource({
     required this.apiSource,
     required this.baseUrlOrPattern,
+    this.availableSurahs,
   });
+
+  /// Check whether this source provides the specified surah.
+  bool hasSurah(int surahId) {
+    if (availableSurahs == null) return true;
+    return availableSurahs!.contains(surahId);
+  }
 
   /// Constructs the full audio URL for a given surah (1-114).
   String getAudioUrl(int surahId) {

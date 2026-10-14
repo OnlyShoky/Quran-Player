@@ -11,13 +11,70 @@ import '../../shared/providers/settings_provider.dart';
 import '../../shared/widgets/reciter_selector_sheet.dart';
 import '../../shared/widgets/playback_mode_button.dart';
 
-class PlayerScreen extends StatelessWidget {
+class PlayerScreen extends StatefulWidget {
   const PlayerScreen({super.key});
+
+  @override
+  State<PlayerScreen> createState() => _PlayerScreenState();
+}
+
+class _PlayerScreenState extends State<PlayerScreen> {
+  PlayerProvider? _playerProvider;
 
   String _formatDuration(Duration d) {
     final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
     final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
     return '$m:$s';
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final player = context.read<PlayerProvider>();
+    if (_playerProvider != player) {
+      _playerProvider?.removeListener(_onPlayerChange);
+      _playerProvider = player;
+      _playerProvider?.addListener(_onPlayerChange);
+    }
+  }
+
+  @override
+  void dispose() {
+    _playerProvider?.removeListener(_onPlayerChange);
+    super.dispose();
+  }
+
+  void _onPlayerChange() {
+    if (!mounted) return;
+    final player = context.read<PlayerProvider>();
+    final msg = player.fallbackMessage;
+    if (msg == null) return;
+
+    // Decode encoded message format 'type:reciterName'
+    String snackText;
+    if (msg.startsWith('audio_unavailable_retrying:')) {
+      final name = msg.substring('audio_unavailable_retrying:'.length);
+      snackText = '⚠️ "$name" unavailable — trying another reciter…';
+    } else if (msg.startsWith('audio_unavailable_skip:')) {
+      final name = msg.substring('audio_unavailable_skip:'.length);
+      snackText = '⚠️ "$name" unavailable — skipping to next surah…';
+    } else {
+      snackText = msg;
+    }
+
+    // Clear before showing so we don't loop
+    player.clearFallbackMessage();
+
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(snackText),
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: Colors.orange.shade800,
+      ),
+    );
   }
 
   @override

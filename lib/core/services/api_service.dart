@@ -179,23 +179,47 @@ class ApiService {
             final riwayah = parts[0];
             final style = parts[1];
 
+            final pTotal = (primaryMoshaf['surah_total'] as num?)?.toInt() ?? 0;
+            final pListStr = primaryMoshaf['surah_list'] as String? ?? '';
+            Set<int>? pSurahs;
+            if (pTotal > 0 && pTotal < 114 && pListStr.isNotEmpty) {
+              pSurahs = pListStr
+                  .split(',')
+                  .map((s) => int.tryParse(s.trim()))
+                  .whereType<int>()
+                  .toSet();
+            }
+
             final audioSources = <ReciterAudioSource>[
               ReciterAudioSource(
                 apiSource: AudioApiSource.mp3Quran,
                 baseUrlOrPattern: serverUrl,
+                availableSurahs: pSurahs,
               ),
             ];
 
-            // Add alternative server if available for fallback
+            // Add alternative servers from other moshafs if available for fallback
+            final seenServers = <String>{serverUrl};
             for (var m = 1; m < groupMoshafs.length; m++) {
-              final altServer = groupMoshafs[m]['server'] as String? ?? '';
-              final altTotal = (groupMoshafs[m]['surah_total'] as num?)?.toInt() ?? 0;
-              if (altServer.isNotEmpty && altServer != serverUrl && altTotal >= 114) {
+              final altMoshaf = groupMoshafs[m];
+              final altServer = altMoshaf['server'] as String? ?? '';
+              if (altServer.isNotEmpty && !seenServers.contains(altServer)) {
+                seenServers.add(altServer);
+                final aTotal = (altMoshaf['surah_total'] as num?)?.toInt() ?? 0;
+                final aListStr = altMoshaf['surah_list'] as String? ?? '';
+                Set<int>? aSurahs;
+                if (aTotal > 0 && aTotal < 114 && aListStr.isNotEmpty) {
+                  aSurahs = aListStr
+                      .split(',')
+                      .map((s) => int.tryParse(s.trim()))
+                      .whereType<int>()
+                      .toSet();
+                }
                 audioSources.add(ReciterAudioSource(
                   apiSource: AudioApiSource.mp3Quran,
                   baseUrlOrPattern: altServer,
+                  availableSurahs: aSurahs,
                 ));
-                break;
               }
             }
 

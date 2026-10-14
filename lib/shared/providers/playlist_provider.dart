@@ -88,28 +88,61 @@ class PlaylistProvider extends ChangeNotifier {
     }
   }
 
-  /// Pick a random reciter from all available reciters (excluding current if possible).
-  Reciter? pickRandomReciter({int? excludeId}) {
+  /// Pick a random reciter from all available reciters (excluding failing/current IDs if possible, preferring reciters that have surahId).
+  Reciter? pickRandomReciter({
+    int? excludeId,
+    Set<int>? excludeIds,
+    int? surahId,
+  }) {
     if (_reciters.isEmpty) return null;
-    final pool = _reciters.length > 1
-        ? _reciters.where((r) => r.id != excludeId).toList()
-        : _reciters;
+    final excludes = <int>{
+      ?excludeId,
+      ...?excludeIds,
+    };
+    var pool = _reciters.where((r) => !excludes.contains(r.id)).toList();
+    if (surahId != null) {
+      final withSurah = pool.where((r) => r.hasSurah(surahId)).toList();
+      if (withSurah.isNotEmpty) pool = withSurah;
+    }
+    if (pool.isEmpty) {
+      pool = surahId != null
+          ? _reciters.where((r) => r.hasSurah(surahId)).toList()
+          : _reciters;
+      if (pool.isEmpty) pool = _reciters;
+    }
     return pool[Random().nextInt(pool.length)];
   }
 
-  /// Pick a random reciter from favorites+pinned (excluding current if possible).
-  Reciter? pickRandomFavReciter({int? excludeId}) {
+  /// Pick a random reciter from favorites+pinned (excluding failing/current IDs if possible, preferring reciters that have surahId).
+  Reciter? pickRandomFavReciter({
+    int? excludeId,
+    Set<int>? excludeIds,
+    int? surahId,
+  }) {
     final favOrPinnedIds = <int>{
       ..._favoriteReciterIds,
       ..._pinnedReciterIds,
     };
-    final pool = _reciters
-        .where((r) => favOrPinnedIds.contains(r.id))
-        .toList();
-    if (pool.isEmpty) return null;
-    final filtered =
-        pool.length > 1 ? pool.where((r) => r.id != excludeId).toList() : pool;
-    return filtered[Random().nextInt(filtered.length)];
+    final favPool =
+        _reciters.where((r) => favOrPinnedIds.contains(r.id)).toList();
+    if (favPool.isEmpty) return null;
+
+    final excludes = <int>{
+      ?excludeId,
+      ...?excludeIds,
+    };
+    var pool = favPool.where((r) => !excludes.contains(r.id)).toList();
+    if (surahId != null) {
+      final withSurah = pool.where((r) => r.hasSurah(surahId)).toList();
+      if (withSurah.isNotEmpty) pool = withSurah;
+    }
+    if (pool.isEmpty) {
+      pool = surahId != null
+          ? favPool.where((r) => r.hasSurah(surahId)).toList()
+          : favPool;
+      if (pool.isEmpty) pool = favPool;
+    }
+    return pool[Random().nextInt(pool.length)];
   }
 
   Reciter? get selectedReciter {

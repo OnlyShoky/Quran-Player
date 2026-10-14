@@ -105,11 +105,18 @@ class QuranPlayerApp extends StatelessWidget {
   }
 }
 
-class _AppShell extends StatelessWidget {
+class _AppShell extends StatefulWidget {
   final Widget child;
   final String location;
 
   const _AppShell({required this.child, required this.location});
+
+  @override
+  State<_AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends State<_AppShell> {
+  PlayerProvider? _playerProvider;
 
   int _tabIndex(String loc) {
     if (loc.startsWith('/playlist')) return 1;
@@ -117,8 +124,56 @@ class _AppShell extends StatelessWidget {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final player = context.read<PlayerProvider>();
+    if (_playerProvider != player) {
+      _playerProvider?.removeListener(_onPlayerChange);
+      _playerProvider = player;
+      _playerProvider?.addListener(_onPlayerChange);
+    }
+  }
+
+  @override
+  void dispose() {
+    _playerProvider?.removeListener(_onPlayerChange);
+    super.dispose();
+  }
+
+  void _onPlayerChange() {
+    if (!mounted) return;
+    final player = context.read<PlayerProvider>();
+    final msg = player.fallbackMessage;
+    if (msg == null) return;
+
+    String snackText;
+    if (msg.startsWith('audio_unavailable_retrying:')) {
+      final name = msg.substring('audio_unavailable_retrying:'.length);
+      snackText = '⚠️ "$name" unavailable — trying another reciter…';
+    } else if (msg.startsWith('audio_unavailable_skip:')) {
+      final name = msg.substring('audio_unavailable_skip:'.length);
+      snackText = '⚠️ "$name" unavailable — skipping to next surah…';
+    } else {
+      snackText = msg;
+    }
+
+    player.clearFallbackMessage();
+
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(snackText),
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: Colors.orange.shade800,
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final currentIndex = _tabIndex(location);
+    final currentIndex = _tabIndex(widget.location);
 
     return PopScope(
       canPop: currentIndex == 0,
@@ -128,7 +183,7 @@ class _AppShell extends StatelessWidget {
         }
       },
       child: Scaffold(
-        body: child,
+        body: widget.child,
         bottomNavigationBar: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

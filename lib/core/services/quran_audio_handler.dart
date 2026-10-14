@@ -10,6 +10,10 @@ class QuranAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler 
 
   final AudioPlayer player = AudioPlayer();
   void Function(MediaItem item)? onCurrentMediaItemChanged;
+  Future<void> Function()? onSkipToNext;
+  Future<void> Function()? onSkipToPrevious;
+  bool Function()? hasNextCheck;
+  bool Function()? hasPreviousCheck;
   late final StreamSubscription<SequenceState?> _sequenceSubscription;
   late final StreamSubscription<PlayerState> _playerSubscription;
   late final StreamSubscription<Duration> _positionSubscription;
@@ -60,12 +64,16 @@ class QuranAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler 
     _broadcastPlaybackState();
   }
 
+  void broadcastPlaybackState() => _broadcastPlaybackState();
+
   void _broadcastPlaybackState() {
     final processingState = player.processingState;
+    final hasPrev = hasPreviousCheck?.call() ?? player.hasPrevious;
+    final hasNext = hasNextCheck?.call() ?? player.hasNext;
     final controls = <MediaControl>[
-      if (player.hasPrevious) MediaControl.skipToPrevious,
+      if (hasPrev) MediaControl.skipToPrevious,
       if (player.playing) MediaControl.pause else MediaControl.play,
-      if (player.hasNext) MediaControl.skipToNext,
+      if (hasNext) MediaControl.skipToNext,
     ];
 
     playbackState.add(PlaybackState(
@@ -105,16 +113,24 @@ class QuranAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler 
 
   @override
   Future<void> skipToNext() async {
-    final nextIndex = (player.currentIndex ?? -1) + 1;
-    await player.seekToNext();
-    await _publishMediaItemAtIndex(nextIndex);
+    if (onSkipToNext != null) {
+      await onSkipToNext!();
+    } else {
+      final nextIndex = (player.currentIndex ?? -1) + 1;
+      await player.seekToNext();
+      await _publishMediaItemAtIndex(nextIndex);
+    }
   }
 
   @override
   Future<void> skipToPrevious() async {
-    final previousIndex = (player.currentIndex ?? 0) - 1;
-    await player.seekToPrevious();
-    await _publishMediaItemAtIndex(previousIndex);
+    if (onSkipToPrevious != null) {
+      await onSkipToPrevious!();
+    } else {
+      final previousIndex = (player.currentIndex ?? 0) - 1;
+      await player.seekToPrevious();
+      await _publishMediaItemAtIndex(previousIndex);
+    }
   }
 
   Future<void> _publishMediaItemAtIndex(int index) async {

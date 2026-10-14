@@ -65,6 +65,12 @@ class Reciter {
     return '$server$surahNum.mp3';
   }
 
+  /// Whether this reciter has audio for the given surah ID across any of its sources.
+  bool hasSurah(int surahId) {
+    if (audioSources.isEmpty) return true;
+    return audioSources.any((s) => s.hasSurah(surahId));
+  }
+
   /// Returns candidate audio URLs across all integrated providers for fallback playback.
   List<String> getAllCandidateAudioUrls(int surahId) {
     return getAllCandidateAudioSources(surahId).map((s) => s.url).toList();
@@ -82,6 +88,7 @@ class Reciter {
     final list = <CandidateAudioSource>[];
     final seenUrls = <String>{};
     for (final src in audioSources) {
+      if (!src.hasSurah(surahId)) continue;
       final u = src.getAudioUrl(surahId);
       if (u.isNotEmpty && !seenUrls.contains(u)) {
         seenUrls.add(u);
@@ -116,7 +123,9 @@ class Reciter {
   Reciter mergeWith(Reciter other) {
     final mergedSources = List<ReciterAudioSource>.from(audioSources);
     for (final src in other.audioSources) {
-      if (!mergedSources.any((s) => s.apiSource == src.apiSource)) {
+      if (!mergedSources.any((s) =>
+          s.apiSource == src.apiSource &&
+          s.baseUrlOrPattern == src.baseUrlOrPattern)) {
         mergedSources.add(src);
       }
     }
@@ -138,6 +147,7 @@ class Reciter {
     String serverUrl = '';
     String style = '';
     String riwayah = json['riwayah'] as String? ?? 'Hafs';
+    Set<int>? availableSurahs;
 
     if (json['moshaf'] != null && (json['moshaf'] as List).isNotEmpty) {
       final moshafList = (json['moshaf'] as List).whereType<Map<String, dynamic>>().toList();
@@ -156,6 +166,15 @@ class Reciter {
 
         final moshaf = moshafList.first;
         serverUrl = moshaf['server'] ?? '';
+        final sTotal = (moshaf['surah_total'] as num?)?.toInt() ?? 0;
+        final sListStr = moshaf['surah_list'] as String? ?? '';
+        if (sTotal > 0 && sTotal < 114 && sListStr.isNotEmpty) {
+          availableSurahs = sListStr
+              .split(',')
+              .map((s) => int.tryParse(s.trim()))
+              .whereType<int>()
+              .toSet();
+        }
         final moshafName = moshaf['name'] as String? ?? '';
         if (moshafName.toLowerCase().contains('mujawwad')) {
           style = 'Mujawwad';
@@ -179,6 +198,7 @@ class Reciter {
               ReciterAudioSource(
                 apiSource: AudioApiSource.mp3Quran,
                 baseUrlOrPattern: serverUrl,
+                availableSurahs: availableSurahs,
               )
             ]
           : const [],
